@@ -53,10 +53,22 @@ header .logo img {
   text-align: center;
 }
 
+.hero h1 {
+    font-size: 3rem;
+}
 
+.hero p {
+    font-style: italic;
+}
+
+.achievements {
+    background-color: #0A3B80;
+    color: white;
+}
 
 section {
   padding: 2rem;
+  margin-bottom: 2rem;
 }
 
 footer {
