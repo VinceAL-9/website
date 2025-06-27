@@ -100,10 +100,34 @@ header .logo img {
 }
 
 
-.achievements {
+.testimonial {
     background-color: #0A3B80;
     color: white;
 }
+
+.testimonial h2 {
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.testimonial .images {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 100%; 
+  margin: 0 auto;
+}
+
+.testimonial .images img {
+  width: 100%; 
+  max-width: 25rem;        
+  height: auto;
+  object-fit: cover;
+  border-radius: 8px;    
+}
+
 
 section {
   padding: 2rem;
@@ -112,4 +136,16 @@ section {
 
 footer {
     padding: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    border-top: thin solid #0A1B39;
+}
+
+footer a {
+  color: #0A3B80;
+  text-decoration: none;
+}
+
+footer i {
+  font-size: 2rem;
 }
