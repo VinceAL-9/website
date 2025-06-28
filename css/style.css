@@ -1,3 +1,7 @@
+:root {
+  --header-height: 4.5rem;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -11,39 +15,74 @@ body {
   background: #f9f9f9;
 }
 
+/* Fixed Header */
 header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
   background-color: #0A1B39;
   color: white;
-  padding: 1rem 2rem;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-
-header .logo {
-    display: flex;
-    gap: 1.5rem;
-}
-
-header .logo img {
-    width: 2.5rem;
-    height: auto;
-}
-
-
+/* Navbar Container */
 .navbar {
+  height: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 2rem;
+  flex-wrap: wrap;
 }
 
+/* Logo */
+.logo img {
+  width: 2.5rem;
+  height: auto;
+}
+
+/* Navigation Links */
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .nav-links a {
   color: white;
   text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  position: relative;
+  padding: 0.25rem 0;
+  transition: color 0.3s ease;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  width: 0%;
+  height: 2px;
+  left: 0;
+  bottom: -4px;
+  background: #007BFF;
+  transition: width 0.3s ease;
+}
+
+.nav-links a:hover {
+  color: #007BFF;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* Push main content below fixed header */
+main {
+  padding-top: var(--header-height);
 }
 
 .jumbotron {
@@ -67,7 +106,8 @@ header .logo img {
 
 .jumbotron h1 {
   font-weight: bolder;
-  font-size: 4rem;
+  font-size: 3.5rem;
+  text-transform: uppercase;
   background-color: #0A1B39;
   padding: 1rem;
   border: 1px solid;
@@ -100,7 +140,120 @@ header .logo img {
 }
 
 
-.testimonial {
+.intro {
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.core-activities {
+  background-color: #0A3B80;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap; /* Ensures it wraps on smaller screens */
+  padding: 2rem;
+  text-align: center;
+}
+
+.core-activities .activity {
+  max-width: 13.75rem;
+  flex: 1 1 12.5rem;
+}
+
+.core-activities .activity h3, 
+.core-activities .activity p {
+  color: white;
+}
+
+.core-activities i {
+  font-size: 2.5rem;
+  color: white; /* Use your brand color */
+  margin-bottom: 0.5rem;
+}
+
+.tech-stack {
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: #fff;
+}
+
+.tech-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.tech {
+  background-color: #0A3B80 ;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 30px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.tech i {
+  font-size: 1.2rem;
+}
+
+.tech:hover {
+  background-color: #007BFF;
+  transform: scale(1.05);
+}
+
+
+.student-life {
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: #0A3B80;
+}
+
+.student-life h2 {
+  color: white;
+}
+
+.life-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.highlight {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  width: 13.75rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.highlight:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(231, 229, 229, 0.7);
+}
+
+.highlight i {
+  font-size: 2.2rem;
+  color: #007BFF;
+  margin-bottom: 0.75rem;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.highlight:hover i {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+/* .testimonial {
     background-color: #0A3B80;
     color: white;
 }
@@ -126,7 +279,7 @@ header .logo img {
   height: auto;
   object-fit: cover;
   border-radius: 8px;    
-}
+} */
 
 
 section {
@@ -139,6 +292,11 @@ footer {
     display: flex;
     justify-content: space-between;
     border-top: thin solid #0A1B39;
+}
+
+footer .icon-fb {
+  display: flex;
+  gap: 1rem;
 }
 
 footer a {
