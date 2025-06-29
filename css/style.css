@@ -15,6 +15,10 @@ body {
   background: #f9f9f9;
 }
 
+h2 {
+  font-size: 2rem;
+}
+
 /* Fixed Header */
 header {
   position: fixed;
@@ -140,6 +144,8 @@ main {
 }
 
 
+/* Home Page */
+
 .intro {
   text-align: center;
   font-size: 1.25rem;
@@ -253,14 +259,102 @@ main {
   transform: rotate(-8deg) scale(1.1);
 }
 
-/* .testimonial {
+
+/* About Us Page */
+
+.about-history {
+  text-align: center;
+}
+
+.about-history h2 {
+  margin-bottom: 1rem;
+}
+
+.about-history p {
+  font-size: 1.1rem;
+  color: #444;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.history {
+  background-color: #0A3B80;
+  color: white;
+}
+
+.history p {
+  color: white;
+}
+
+.officers {
+  background: #f8f9fb;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.officers h2 {
+  margin-bottom: 2rem;
+  color: #0A1B39;
+}
+
+.officer-group {
+  margin-bottom: 3rem;
+}
+
+.officer-group h3 {
+  font-size: 1.5rem;
+  color: #007BFF;
+  margin-bottom: 1.5rem;
+}
+
+.officer-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.officer-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+  width: 180px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.officer-card:hover {
+  transform: translateY(-5px);
+}
+
+.officer-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.officer-card h4 {
+  font-size: 1.1rem;
+  color: #0A1B39;
+  margin-bottom: 0.25rem;
+}
+
+.officer-card p {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+
+.testimonial {
     background-color: #0A3B80;
     color: white;
 }
 
 .testimonial h2 {
   margin-bottom: 1rem;
-  font-size: 2.5rem;
   text-align: center;
 }
 
@@ -279,13 +373,13 @@ main {
   height: auto;
   object-fit: cover;
   border-radius: 8px;    
-} */
-
+}
 
 section {
   padding: 2rem;
   margin-bottom: 2rem;
 }
+
 
 footer {
     padding: 1.25rem;
