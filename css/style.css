@@ -463,16 +463,38 @@ section {
   margin-bottom: 2rem;
 }
 
+@media only screen and (max-width: 480px){
+  footer h3 {
+    display: none;
+  }
+
+  .jumbotron .text {
+    line-height: 3.5rem;
+  }
+
+  .jumbotron h1 {
+    font-size: 2rem;
+  }
+
+  .jumbotron p {
+    font-size: 1.25rem;
+    line-height: 2.5rem;
+  }
+
+
+}
 
 footer {
     padding: 1.25rem;
     display: flex;
+    align-items: center;
     justify-content: space-between;
     border-top: thin solid #0A1B39;
 }
 
 footer .icon-fb {
   display: flex;
+  align-items: center;
   gap: 1rem;
 }
 
