@@ -349,30 +349,113 @@ main {
 
 
 .testimonial {
-    background-color: #0A3B80;
-    color: white;
+  background-color: #0A3B80;
+  color: white;
+  padding: 3rem 2rem;
+  text-align: center;
 }
 
 .testimonial h2 {
-  margin-bottom: 1rem;
-  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2rem;
 }
 
 .testimonial .images {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 1rem;
-  max-width: 100%; 
+  gap: 1.5rem;
+  max-width: 100%;
   margin: 0 auto;
 }
 
 .testimonial .images img {
-  width: 100%; 
-  max-width: 25rem;        
+  width: 100%;
+  max-width: 25rem;
   height: auto;
   object-fit: cover;
-  border-radius: 8px;    
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.testimonial .images img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+}
+
+
+/* Events page */
+
+.latest-events {
+  padding: 0 2rem;
+  text-align: center;
+  background-color: #f9f9f9;
+}
+
+.latest-events h2 {
+  margin-bottom: 2rem;
+  color: #0A1B39;
+}
+
+.event-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.event-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 17.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+}
+
+.event-card img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.event-card h3 {
+  font-size: 1.2rem;
+  color: #0A1B39;
+  margin-bottom: 0.5rem;
+}
+
+.event-card p {
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+.event-btn {
+  display: inline-block;
+  margin-top: auto;
+  background-color: #0A3B80;
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.event-btn:hover {
+  background-color: #007BFF;
 }
 
 section {
