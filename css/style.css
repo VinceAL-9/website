@@ -458,12 +458,39 @@ main {
   background-color: #007BFF;
 }
 
+#toggle-form-btn {
+  margin: 1rem auto;
+  display: block;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #0A3B80;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#toggle-form-btn:hover {
+  background-color: #007BFF;
+}
+
+#add-event-section form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 400px;
+  margin: 1.5rem auto;
+}
+
+
+
 section {
   padding: 2rem;
   margin-bottom: 2rem;
 }
 
-@media only screen and (max-width: 480px){
+@media only screen and (max-width: 768px){
   footer h3 {
     display: none;
   }
@@ -471,7 +498,7 @@ section {
   .jumbotron .text {
     line-height: 3.5rem;
   }
-
+  
   .jumbotron h1 {
     font-size: 2rem;
   }
