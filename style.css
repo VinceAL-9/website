@@ -946,11 +946,17 @@ select.form-control {
 }
 
 .officer-image img {
-  width: 80px;
-  height: 80px;
+  width: 80px !important;
+  height: 80px !important;
   object-fit: cover;
-  border: 3px solid var(--accent-blue);
   transition: transform 0.3s ease;
+}
+
+/* Ensure images don't flicker */
+img {
+    image-rendering: auto;
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
 }
 
 .officer-card:hover .officer-image img {
@@ -1038,14 +1044,15 @@ select.form-control {
   .event-card:hover {
     transform: none;
   }
-  
+
+    
   .officer-card:hover {
-    transform: none;
+      transform: none !important;
   }
-  
+    
   .officer-image img {
-    width: 60px;
-    height: 60px;
+      width: 60px !important;
+      height: 60px !important;
   }
 }
 
@@ -1187,23 +1194,8 @@ footer a:hover {
   display: none;
 }
 
-/* Officer image placeholder styling */
-.officer-image {
-  position: relative;
-}
 
-.officer-image::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-blue) 100%);
-  border-radius: 50%;
-  z-index: -1;
-}
+
 
 /* Enhanced card shadows */
 .card {

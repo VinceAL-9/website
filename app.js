@@ -72,6 +72,25 @@ function initNavigation() {
     }
 }
 
+// Improved image error handling
+document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('.officer-image img');
+    
+    images.forEach(img => {
+        img.addEventListener('error', function() {
+            console.log('Image failed to load:', this.src);
+            this.src = 'images/placeholder-image.png';
+            this.style.opacity = '0.7'; // Indicate it's a fallback
+        });
+        
+        img.addEventListener('load', function() {
+            console.log('Image loaded successfully:', this.src);
+            this.style.opacity = '1';
+        });
+    });
+});
+
+
 // Update page title based on active section
 function updatePageTitle(section) {
     const titles = {
