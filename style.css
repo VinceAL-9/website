@@ -1168,7 +1168,7 @@ footer a:hover {
 
 /* Testimonial section styling */
 .blockquote-footer {
-  color: var(--primary-blue);
+  color: var(--background-color);
 }
 
 .blockquote-footer cite {
@@ -1301,3 +1301,52 @@ footer a:hover {
     page-break-after: avoid;
   }
 }
+
+
+/* ========================================================================
+   Theme Lock Override – Disable system dark/light switching
+   These rules ensure the site's color variables are fixed so that the layout
+   and typography do not change when the user's browser/OS toggles between
+   dark and light mode. Feel free to adjust the palette below, but keep these
+   overrides in place if you want the design to remain theme-independent.
+   ======================================================================== */
+@media (prefers-color-scheme: dark), (prefers-color-scheme: light) {
+  :root {
+    /* Base surfaces & text */
+    --color-background: var(--color-cream-50);
+    --color-surface:     var(--color-cream-100);
+    --color-text:        var(--color-slate-900);
+    --color-text-secondary: var(--color-slate-500);
+
+    /* Primary palette */
+    --color-primary:        var(--color-teal-500);
+    --color-primary-hover:  var(--color-teal-600);
+    --color-primary-active: var(--color-teal-700);
+
+    /* Secondary / neutrals */
+    --color-secondary:        rgba(var(--color-brown-600-rgb), 0.12);
+    --color-secondary-hover:  rgba(var(--color-brown-600-rgb), 0.20);
+    --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
+    --color-border:           rgba(var(--color-brown-600-rgb), 0.20);
+
+    /* Card & component borders */
+    --color-card-border:       rgba(var(--color-brown-600-rgb), 0.12);
+    --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
+
+    /* Button text */
+    --color-btn-primary-text: var(--color-cream-50);
+
+    /* State colors */
+    --color-error:   var(--color-red-500);
+    --color-success: var(--color-teal-500);
+    --color-warning: var(--color-orange-500);
+    --color-info:    var(--color-slate-500);
+
+    /* Focus ring */
+    --color-focus-ring: rgba(var(--color-teal-500-rgb), 0.40);
+  }
+}
+
+/* ========================================================================
+   End Theme Lock Override
+   ======================================================================== */

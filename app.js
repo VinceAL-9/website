@@ -1,5 +1,4 @@
 // PSSE Website JavaScript
-
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the application
     console.log('PSSE Website initializing...');
@@ -19,7 +18,6 @@ function initNavigation() {
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            
             const targetSection = this.getAttribute('data-section');
             console.log('Navigating to section:', targetSection);
             
@@ -43,7 +41,10 @@ function initNavigation() {
                 
                 // Scroll to top of the section
                 setTimeout(() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
                 }, 100);
                 
                 console.log('Section', targetSection, 'is now active');
@@ -75,7 +76,6 @@ function initNavigation() {
 // Improved image error handling
 document.addEventListener('DOMContentLoaded', function() {
     const images = document.querySelectorAll('.officer-image img');
-    
     images.forEach(img => {
         img.addEventListener('error', function() {
             console.log('Image failed to load:', this.src);
@@ -89,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
 
 // Update page title based on active section
 function updatePageTitle(section) {
@@ -352,9 +351,18 @@ function handleEventLearnMore(eventIndex) {
     }
 }
 
-// Modal functionality
+// Global variable to keep track of current modal instance
+let currentModalInstance = null;
+
+// Fixed modal functionality
 function showModal(title, content) {
-    // Create modal if it doesn't exist
+    // Close any existing modal first
+    if (currentModalInstance) {
+        currentModalInstance.hide();
+        currentModalInstance = null;
+    }
+    
+    // Create or get modal element
     let modal = document.getElementById('customModal');
     if (!modal) {
         modal = createModal();
@@ -364,30 +372,36 @@ function showModal(title, content) {
     // Update modal content
     const modalTitle = modal.querySelector('.modal-title');
     const modalBody = modal.querySelector('.modal-body');
-    
     modalTitle.textContent = title;
     modalBody.innerHTML = `<p>${content}</p>`;
     
+    // Create new Bootstrap modal instance
+    currentModalInstance = new bootstrap.Modal(modal);
+    
+    // Add event listener for when modal is hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        currentModalInstance = null;
+    });
+    
     // Show modal
-    const bootstrapModal = new bootstrap.Modal(modal);
-    bootstrapModal.show();
+    currentModalInstance.show();
 }
 
-// Create modal element
+// Create modal element with fixed structure
 function createModal() {
     const modalHTML = `
-        <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="modalLabel">Modal Title</h5>
+                        <h5 class="modal-title" id="customModalLabel">Modal Title</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        Modal content goes here.
+                        <p>Modal content goes here...</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary contact-btn">Contact Us</button>
                     </div>
                 </div>
@@ -399,163 +413,92 @@ function createModal() {
     modalElement.innerHTML = modalHTML;
     const modal = modalElement.firstElementChild;
     
-    // Add contact button functionality
+    // Add contact button functionality with proper modal handling
     modal.querySelector('.contact-btn').addEventListener('click', function() {
-        showModal('Contact PSSE', 'You can reach us through:<br><br>• Visit our office at Central Philippine University<br>• Follow us on our social media platforms<br>• Email us through official university channels<br>• Attend our regular meetings and events<br><br>We welcome all inquiries and look forward to connecting with you!');
+        // Close current modal first, then show contact modal after a delay
+        if (currentModalInstance) {
+            currentModalInstance.hide();
+            
+            // Wait for the modal to close before showing the new one
+            setTimeout(() => {
+                showContactModal();
+            }, 300);
+        } else {
+            showContactModal();
+        }
     });
     
     return modal;
 }
 
-// Typing effect function
+// Separate function for contact modal to avoid recursion issues
+function showContactModal() {
+    const contactContent = `
+        You can reach us through:<br><br>
+        📧 Email: psse@cpu.edu.ph<br>
+        📱 Facebook: PSSE Central Philippine University<br>
+        📍 Office: Central Philippine University, Software Engineering Department<br><br>
+        We look forward to hearing from you!
+    `;
+    
+    // Create a separate modal for contact info
+    let contactModal = document.getElementById('contactModal');
+    if (!contactModal) {
+        contactModal = createContactModal();
+        document.body.appendChild(contactModal);
+    }
+    
+    // Update contact modal content
+    const modalTitle = contactModal.querySelector('.modal-title');
+    const modalBody = contactModal.querySelector('.modal-body');
+    modalTitle.textContent = 'Contact PSSE';
+    modalBody.innerHTML = `<div>${contactContent}</div>`;
+    
+    // Create new Bootstrap modal instance for contact
+    const contactModalInstance = new bootstrap.Modal(contactModal);
+    contactModalInstance.show();
+}
+
+// Create separate contact modal to avoid conflicts
+function createContactModal() {
+    const modalHTML = `
+        <div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="contactModalLabel">Contact PSSE</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div>Contact information goes here...</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const modalElement = document.createElement('div');
+    modalElement.innerHTML = modalHTML;
+    return modalElement.firstElementChild;
+}
+
+// Typing effect function (if used elsewhere in your code)
 function typeText(element, text, speed) {
+    if (!element || !text) return;
+    
     element.textContent = '';
     let i = 0;
     
-    function type() {
+    function typeChar() {
         if (i < text.length) {
             element.textContent += text.charAt(i);
             i++;
-            setTimeout(type, speed);
+            setTimeout(typeChar, speed);
         }
     }
     
-    // Start typing after a brief delay
-    setTimeout(type, 1000);
+    typeChar();
 }
-
-// Handle keyboard navigation
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        // Close any open modals
-        const openModal = document.querySelector('.modal.show');
-        if (openModal) {
-            const bootstrapModal = bootstrap.Modal.getInstance(openModal);
-            if (bootstrapModal) {
-                bootstrapModal.hide();
-            }
-        }
-    }
-    
-    // Navigation shortcuts
-    if (e.altKey) {
-        switch(e.key) {
-            case '1':
-                e.preventDefault();
-                document.querySelector('.nav-link[data-section="home"]').click();
-                break;
-            case '2':
-                e.preventDefault();
-                document.querySelector('.nav-link[data-section="about"]').click();
-                break;
-            case '3':
-                e.preventDefault();
-                document.querySelector('.nav-link[data-section="events"]').click();
-                break;
-        }
-    }
-});
-
-// Social media link handlers
-document.addEventListener('click', function(e) {
-    if (e.target.closest('footer a')) {
-        const socialLink = e.target.closest('a');
-        if (socialLink.href === '#' || socialLink.href.endsWith('#')) {
-            e.preventDefault();
-            showModal('Connect With Us', 'Follow us on our social media platforms to stay updated with PSSE activities and events!<br><br>• Facebook: Stay connected with daily updates<br>• Twitter: Get quick updates and announcements<br>• Instagram: See our events and activities<br>• LinkedIn: Connect professionally with our network<br><br>Official links will be available soon. For now, you can find us through Central Philippine University\'s official channels.');
-        }
-    }
-});
-
-// Utility functions
-function debounce(func, wait, immediate) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            timeout = null;
-            if (!immediate) func(...args);
-        };
-        const callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) func(...args);
-    };
-}
-
-// Add smooth scrolling for anchor links
-function smoothScrollToElement(element) {
-    element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-        inline: 'nearest'
-    });
-}
-
-// Performance optimization: Lazy load animations
-const lazyAnimations = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('animate');
-        }
-    });
-});
-
-// Initialize performance optimizations
-function optimizePerformance() {
-    // Preload critical images
-    const criticalImages = [
-        'images/background-cover.jpg',
-        'images/placeholder-image.jpg'
-    ];
-    
-    criticalImages.forEach(src => {
-        const img = new Image();
-        img.src = src;
-    });
-}
-
-// Call performance optimizations
-optimizePerformance();
-
-// Console welcome message
-console.log(`
- ____  ____  ____  _____ 
-|  _ \\|  _ \\/ ___|| ____|
-| |_) | |_) \\___ \\|  _|  
-|  __/|  __/ ___) | |___ 
-|_|   |_|   |____/|_____|
-
-Welcome to PSSE Website!
-Shaping the next disruptors in software innovation.
-
-Keyboard shortcuts:
-- Alt + 1: Home
-- Alt + 2: About  
-- Alt + 3: Events
-- Escape: Close modals
-`);
-
-// Export functions for potential future use or testing
-window.PSSE = {
-    showModal,
-    updatePageTitle,
-    smoothScrollToElement,
-    showOfficerInfo,
-    handleEventLearnMore
-};
-
-// Error handling
-window.addEventListener('error', function(e) {
-    console.error('PSSE Website Error:', e.error);
-});
-
-// Add resize handler for responsive adjustments
-window.addEventListener('resize', debounce(function() {
-    // Reset transforms on mobile to prevent layout issues
-    if (window.innerWidth <= 768) {
-        const cards = document.querySelectorAll('.card');
-        cards.forEach(card => {
-            card.style.transform = 'none';
-        });
-    }
-}, 250));
