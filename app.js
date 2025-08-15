@@ -233,7 +233,7 @@ function initInteractiveElements() {
     
     if (joinUsBtn) {
         joinUsBtn.addEventListener('click', function() {
-            showModal('Join PSSE', 'Thank you for your interest in joining PSSE! Please contact us through our social media channels or visit our office at Central Philippine University. We welcome all Software Engineering students who are passionate about technology and community building.');
+            showModal('Join PSSE', 'Thank you for your interest in joining PSSE! To become an automatic member, you must be a software engineering student at Central Philippine University. We welcome all Software Engineering students who are passionate about technology and community building.');
         });
     }
     
