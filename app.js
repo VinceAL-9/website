@@ -1133,51 +1133,62 @@ function initOfficerCards() {
     });
 }
 
-// Enhanced modal system with better management
-let currentModalInstance = null;
+// ========================================================================
+// FIXED MODAL SYSTEM - Prevents freezing on modal switches
+// ========================================================================
 
+// Global modal instance tracking
+let currentModalInstance = null;
+let contactModalInstance = null;
+
+// Fixed modal functionality - prevents website freezing
 function showModal(title, content) {
-    // Close existing modal
+    // Close any existing modal first
     if (currentModalInstance) {
         currentModalInstance.hide();
         currentModalInstance = null;
     }
     
+    // Create or get modal element
     let modal = document.getElementById('customModal');
     if (!modal) {
         modal = createModal();
         document.body.appendChild(modal);
     }
     
-    // Update content
+    // Update modal content
     const modalTitle = modal.querySelector('.modal-title');
     const modalBody = modal.querySelector('.modal-body');
     modalTitle.textContent = title;
     modalBody.innerHTML = `<p>${content}</p>`;
     
-    // Create and show modal
+    // Create new Bootstrap modal instance
     currentModalInstance = new bootstrap.Modal(modal);
     
+    // Add event listener for when modal is hidden
     modal.addEventListener('hidden.bs.modal', function() {
         currentModalInstance = null;
     }, { once: true });
     
+    // Show modal
     currentModalInstance.show();
 }
 
-// Create enhanced modal element
+// Create main modal element with fixed structure
 function createModal() {
     const modalHTML = `
-        <div class="modal fade" id="customModal" tabindex="-1">
-            <div class="modal-dialog">
+        <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title"></h5>
+                        <h5 class="modal-title" id="customModalLabel">Modal Title</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body"></div>
+                    <div class="modal-body">
+                        <p>Modal content goes here...</p>
+                    </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary contact-btn">Contact Us</button>
                     </div>
                 </div>
@@ -1189,11 +1200,16 @@ function createModal() {
     modalElement.innerHTML = modalHTML;
     const modal = modalElement.firstElementChild;
     
-    // Enhanced contact button
+    // Add contact button functionality with proper modal handling
     modal.querySelector('.contact-btn').addEventListener('click', function() {
+        // Close current modal first, then show contact modal after a delay
         if (currentModalInstance) {
             currentModalInstance.hide();
-            setTimeout(() => showContactModal(), 300);
+            
+            // Wait for the modal to close before showing the new one
+            setTimeout(() => {
+                showContactModal();
+            }, 300);
         } else {
             showContactModal();
         }
@@ -1202,34 +1218,72 @@ function createModal() {
     return modal;
 }
 
-// Contact modal (enhanced)
+// Separate function for contact modal to avoid recursion issues
 function showContactModal() {
     const contactContent = `
-        <div class="contact-info">
-            <p><strong>You can reach us through:</strong></p>
-            <div class="contact-methods">
-                <div class="contact-item mb-3">
-                    <i class="fab fa-facebook text-primary me-2"></i>
-                    <span>Facebook: PSSE Central Philippine University</span>
-                </div>
-                <div class="contact-item mb-3">
-                    <i class="fas fa-envelope text-primary me-2"></i>
-                    <span>Email: psse@cpu.edu.ph</span>
-                </div>
-                <div class="contact-item mb-3">
-                    <i class="fas fa-phone text-primary me-2"></i>
-                    <span>Phone: +63 33 329 1971</span>
-                </div>
-                <div class="contact-item mb-3">
-                    <i class="fas fa-map-marker-alt text-primary me-2"></i>
-                    <span>Office: PSSE Office, CPU Campus, Jaro, Iloilo City</span>
+        <strong>You can reach us through:</strong><br><br>
+        📧 <strong>Email:</strong> psse@cpu.edu.ph<br>
+        📱 <strong>Facebook:</strong> PSSE Central Philippine University<br>
+        📍 <strong>Office:</strong> Central Philippine University, Software Engineering Department<br><br>
+        We look forward to hearing from you!
+    `;
+    
+    // Create or get contact modal
+    let contactModal = document.getElementById('contactModal');
+    if (!contactModal) {
+        contactModal = createContactModal();
+        document.body.appendChild(contactModal);
+    }
+    
+    // Update contact modal content
+    const modalTitle = contactModal.querySelector('.modal-title');
+    const modalBody = contactModal.querySelector('.modal-body');
+    modalTitle.textContent = 'Contact PSSE';
+    modalBody.innerHTML = `<div>${contactContent}</div>`;
+    
+    // Close any existing contact modal
+    if (contactModalInstance) {
+        contactModalInstance.hide();
+        contactModalInstance = null;
+    }
+    
+    // Create new Bootstrap modal instance for contact
+    contactModalInstance = new bootstrap.Modal(contactModal);
+    
+    // Add event listener for when contact modal is hidden
+    contactModal.addEventListener('hidden.bs.modal', function() {
+        contactModalInstance = null;
+    }, { once: true });
+    
+    contactModalInstance.show();
+}
+
+// Create separate contact modal to avoid conflicts
+function createContactModal() {
+    const modalHTML = `
+        <div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="contactModalLabel">Contact PSSE</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div>Contact information goes here...</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
     
-    showModal('Contact PSSE', contactContent);
+    const modalElement = document.createElement('div');
+    modalElement.innerHTML = modalHTML;
+    return modalElement.firstElementChild;
 }
+
 
 // Enhanced officer info system
 function showOfficerInfo(officerTitle) {
