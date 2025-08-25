@@ -1,8 +1,10 @@
 // PSSE Website JavaScript - Multi-Page Layout
 // Enhanced with Merchandise Functionality and Merged Inline Scripts
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the application
     console.log('PSSE Website initializing...');
+    
     initAnimations();
     initInteractiveElements();
     initImageHandling();
@@ -10,30 +12,30 @@ document.addEventListener('DOMContentLoaded', function() {
     initCardHoverEffects(); // From inline scripts
     initScrollAnimations(); // From inline scripts
     initLoadingAnimation(); // From inline scripts
-
+    
     const joinButtonHome = document.querySelector('.btn.btn-primary.btn-lg.me-3'); // The Join Us button on home page
     if (joinButtonHome) {
-    joinButtonHome.addEventListener('click', function(e) {
-        e.preventDefault();
-        const joinUsModal = new bootstrap.Modal(document.getElementById('joinUsModal'));
-        joinUsModal.show();
-    });
+        joinButtonHome.addEventListener('click', function(e) {
+            e.preventDefault();
+            const joinUsModal = new bootstrap.Modal(document.getElementById('joinUsModal'));
+            joinUsModal.show();
+        });
     }
-
+    
     const joinButtonEvents = document.querySelector('.btn btn-primary btn-lg me-3'); // The Join Us button on home page
     if (joinButtonEvents) {
-    joinButtonEvents.addEventListener('click', function(e) {
-        e.preventDefault();
-        const joinUsModal = new bootstrap.Modal(document.getElementById('joinUsModal'));
-        joinUsModal.show();
-    });
+        joinButtonEvents.addEventListener('click', function(e) {
+            e.preventDefault();
+            const joinUsModal = new bootstrap.Modal(document.getElementById('joinUsModal'));
+            joinUsModal.show();
+        });
     }
-
 });
 
 // ========================================================================
 // CARD HOVER EFFECTS AND ANIMATIONS (From inline scripts)
 // ========================================================================
+
 function initCardHoverEffects() {
     // Add hover effect to officer cards
     const officerCards = document.querySelectorAll('.officer-card');
@@ -55,7 +57,7 @@ function initScrollAnimations() {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
     };
-
+    
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -64,7 +66,7 @@ function initScrollAnimations() {
             }
         });
     }, observerOptions);
-
+    
     // Observe all cards
     document.querySelectorAll('.card').forEach(card => {
         card.style.opacity = '0';
@@ -78,7 +80,6 @@ function initLoadingAnimation() {
     // Add loading animation
     document.body.style.opacity = '0';
     document.body.style.transition = 'opacity 0.3s ease';
-    
     setTimeout(() => {
         document.body.style.opacity = '1';
     }, 100);
@@ -87,6 +88,7 @@ function initLoadingAnimation() {
 // ========================================================================
 // CORE INTERACTIVE FUNCTIONALITY (Optimized)
 // ========================================================================
+
 // Interactive elements initialization (Enhanced)
 function initInteractiveElements() {
     console.log('Initializing interactive elements...');
@@ -159,6 +161,7 @@ function initAnimations() {
 // ========================================================================
 // MERCHANDISE SYSTEM - CORE FUNCTIONALITY
 // ========================================================================
+
 // Merchandise data structure (Mock database)
 let merchandiseData = {
     lanyards: [
@@ -277,6 +280,7 @@ let orderSystem = {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
+        
         this.orders.unshift(order); // Add to beginning for newest first
         this.saveToStorage();
         return order;
@@ -301,6 +305,7 @@ let orderSystem = {
             if (item) {
                 item.stock += order.quantity;
             }
+            
             order.status = 'cancelled';
             order.updatedAt = new Date().toISOString();
             this.saveToStorage();
@@ -319,20 +324,36 @@ let orderSystem = {
 function initMerchandise() {
     console.log('Initializing merchandise system...');
     
-    // Only initialize if we're on the merchandise page
-    if (!document.getElementById('allMerchGrid') && !document.getElementById('lanyardGrid') && !document.getElementById('tshirtGrid')) {
+    // Check if we're on the merchandise page by looking for any of the grid containers
+    const allMerchGrid = document.getElementById('allMerchGrid');
+    const lanyardGrid = document.getElementById('lanyardGrid');
+    const tshirtGrid = document.getElementById('tshirtGrid');
+    
+    if (!allMerchGrid && !lanyardGrid && !tshirtGrid) {
         console.log('Not on merchandise page, skipping merchandise initialization');
         return;
     }
     
     // Load merchandise grid
     loadMerchandiseGrid();
+    
     // Initialize tabs
     initMerchandiseTabs();
+    
     // Load orders if any exist
     loadOrdersDisplay();
+    
     // Initialize modal handlers
     initModalHandlers();
+    
+    // Initialize View Orders button
+    const viewOrdersBtn = document.getElementById('viewOrdersBtn');
+    if (viewOrdersBtn) {
+        viewOrdersBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleOrdersSection();
+        });
+    }
     
     console.log('Merchandise system initialized successfully');
 }
@@ -343,45 +364,57 @@ function loadMerchandiseGrid() {
     
     // Populate all items tab
     renderMerchandiseGrid('allMerchGrid', allItems);
+    
     // Populate category-specific tabs
     renderMerchandiseGrid('lanyardGrid', merchandiseData.lanyards);
     renderMerchandiseGrid('tshirtGrid', merchandiseData.tshirts);
 }
 
-// Render merchandise grid
+// FIXED: Render merchandise grid with proper Bootstrap column structure
 function renderMerchandiseGrid(containerId, items) {
     const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    if (items.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center py-4">No items available</p>';
+    if (!container) {
+        console.warn(`Container ${containerId} not found`);
         return;
     }
     
+    if (items.length === 0) {
+        container.innerHTML = '<div class="col-12"><div class="text-center py-5"><h5>No items available</h5></div></div>';
+        return;
+    }
+    
+    // Generate HTML for each item wrapped in Bootstrap columns
     const gridHTML = items.map(item => {
         const stockClass = item.stock === 0 ? 'out-of-stock' : item.stock <= 5 ? 'low-stock' : 'in-stock';
         const stockText = item.stock === 0 ? 'Out of Stock' : item.stock <= 5 ? 'Low Stock' : 'In Stock';
         
         return `
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card merch-card h-100" data-item-id="${item.id}">
-                    <div class="position-relative">
-                        <img src="${item.image}" class="card-img-top" alt="${item.name}" onerror="this.src='images/placeholder.jpg'">
-                        <div class="stock-indicator">
-                            <span class="stock-badge ${stockClass}">${stockText}</span>
-                        </div>
+            <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="card merch-card h-100 position-relative">
+                    <!-- Stock indicator badge -->
+                    <div class="stock-indicator">
+                        <span class="stock-badge ${stockClass}">${stockText}</span>
                     </div>
+                    
+                    <!-- Product image -->
+                    <img src="${item.image}" class="card-img-top" alt="${item.name}" 
+                         onerror="this.src='images/placeholder-merch.jpg'">
+                    
+                    <!-- Card body with product details -->
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">${item.name}</h5>
-                        <p class="card-text text-muted flex-grow-1">${item.description}</p>
+                        <p class="card-text flex-grow-1">${item.description}</p>
                         <div class="mt-auto">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="h4 mb-0 text-primary">₱${item.price}</span>
+                                <span class="h5 text-primary mb-0">₱${item.price}</span>
                                 <small class="text-muted">Stock: ${item.stock}</small>
                             </div>
+                            
+                            <!-- Order button - disabled if out of stock -->
                             <button class="btn btn-primary w-100 order-btn" 
                                     data-item-id="${item.id}" 
                                     ${item.stock === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-shopping-cart me-2"></i>
                                 ${item.stock === 0 ? 'Out of Stock' : 'Order Now'}
                             </button>
                         </div>
@@ -391,254 +424,282 @@ function renderMerchandiseGrid(containerId, items) {
         `;
     }).join('');
     
+    // Insert the generated HTML into the container
     container.innerHTML = gridHTML;
     
-    // Add event listeners for order buttons
-    container.querySelectorAll('.order-btn').forEach(btn => {
-        btn.addEventListener('click', handleOrderClick);
+    // Add click event listeners to order buttons
+    container.querySelectorAll('.order-btn:not([disabled])').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            openOrderModal(itemId);
+        });
     });
 }
 
 // Initialize merchandise tabs
 function initMerchandiseTabs() {
-    const tabLinks = document.querySelectorAll('.nav-tabs .nav-link');
-    tabLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Update active tab
-            tabLinks.forEach(l => l.classList.remove('active'));
+    const tabs = document.querySelectorAll('#merchTabs .nav-link');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            tabs.forEach(t => t.classList.remove('active'));
+            // Add active class to clicked tab
             this.classList.add('active');
-            
-            // Show corresponding tab content
-            const targetTab = this.getAttribute('data-bs-target');
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.remove('show', 'active');
-            });
-            document.querySelector(targetTab).classList.add('show', 'active');
         });
     });
 }
 
-// Handle order button clicks
-function handleOrderClick(event) {
-    const itemId = event.target.getAttribute('data-item-id');
+// FIXED: Open order modal for a specific item with proper form validation
+function openOrderModal(itemId) {
     const item = orderSystem.getItemById(itemId);
-    
     if (!item || item.stock === 0) {
-        alert('Sorry, this item is currently out of stock.');
+        alert('Sorry, this item is out of stock.');
         return;
     }
     
-    showOrderModal(item);
-}
-
-// Show order modal
-function showOrderModal(item) {
-    const modalContent = `
-        <div class="text-center mb-4">
-            <img src="${item.image}" alt="${item.name}" class="img-fluid mb-3" style="max-height: 200px; object-fit: cover;">
-            <h4>${item.name}</h4>
-            <p class="text-muted">${item.description}</p>
-            <h5 class="text-primary">₱${item.price}</h5>
+    // Create modal HTML for ordering
+    const modalHTML = `
+        <div class="modal fade" id="orderModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Order ${item.name}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="orderForm">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <img src="${item.image}" class="img-fluid rounded" alt="${item.name}"
+                                         onerror="this.src='images/placeholder-merch.jpg'">
+                                </div>
+                                <div class="col-md-8">
+                                    <h6>${item.name}</h6>
+                                    <p class="text-muted">${item.description}</p>
+                                    <p class="h5 text-primary">₱${item.price}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="customerName" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Student ID</label>
+                                <input type="text" class="form-control" id="studentId" placeholder="Optional">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Contact Number</label>
+                                <input type="tel" class="form-control" id="contactNumber" placeholder="Optional">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Quantity *</label>
+                                <select class="form-control" id="quantity" required>
+                                    ${Array.from({length: Math.min(item.stock, 10)}, (_, i) => 
+                                        `<option value="${i + 1}">${i + 1}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Total Amount</label>
+                                <input type="text" class="form-control" id="totalAmount" value="₱${item.price}" readonly>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="submitOrder">Submit Order</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <form id="orderForm">
-            <div class="mb-3">
-                <label for="quantity" class="form-label">Quantity</label>
-                <select class="form-control" id="quantity" required>
-                    ${Array.from({length: Math.min(item.stock, 10)}, (_, i) => 
-                        `<option value="${i + 1}">${i + 1}</option>`
-                    ).join('')}
-                </select>
-                <small class="text-muted">Available stock: ${item.stock}</small>
-            </div>
-            
-            <div class="mb-3">
-                <label for="customerName" class="form-label">Full Name</label>
-                <input type="text" class="form-control" id="customerName" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="studentId" class="form-label">Student ID</label>
-                <input type="text" class="form-control" id="studentId" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="contactNumber" class="form-label">Contact Number</label>
-                <input type="tel" class="form-control" id="contactNumber" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="email" class="form-label">Email Address</label>
-                <input type="email" class="form-control" id="email" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="notes" class="form-label">Special Instructions (Optional)</label>
-                <textarea class="form-control" id="notes" rows="3"></textarea>
-            </div>
-            
-            <div class="alert alert-info">
-                <strong>Total Amount: </strong>
-                <span id="totalAmount">₱${item.price}</span>
-            </div>
-            
-            <div class="d-flex gap-3">
-                <button type="submit" class="btn btn-primary flex-fill">Place Order</button>
-                <button type="button" class="btn btn-secondary contact-btn">Contact Us</button>
-            </div>
-        </form>
     `;
     
-    showModal('Order Item', modalContent);
-    
-    // Add form submission handler
-    document.getElementById('orderForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        processOrder(item);
-    });
-    
-    // Update total amount when quantity changes
-    document.getElementById('quantity').addEventListener('change', function() {
-        const quantity = parseInt(this.value);
-        const total = item.price * quantity;
-        document.getElementById('totalAmount').textContent = `₱${total}`;
-    });
-}
-
-// Process order submission
-function processOrder(item) {
-    const form = document.getElementById('orderForm');
-    const formData = new FormData(form);
-    
-    const orderData = {
-        itemId: item.id,
-        itemName: item.name,
-        itemPrice: item.price,
-        quantity: parseInt(formData.get('quantity')),
-        customerName: formData.get('customerName'),
-        studentId: formData.get('studentId'),
-        contactNumber: formData.get('contactNumber'),
-        email: formData.get('email'),
-        notes: formData.get('notes'),
-        totalAmount: item.price * parseInt(formData.get('quantity')),
-        status: 'reviewing'
-    };
-    
-    // Reduce stock
-    item.stock -= orderData.quantity;
-    
-    // Add order to system
-    const order = orderSystem.addOrder(orderData);
-    
-    // Close modal
-    if (currentModalInstance) {
-        currentModalInstance.hide();
+    // Remove existing modal if any
+    const existingModal = document.getElementById('orderModal');
+    if (existingModal) {
+        existingModal.remove();
     }
     
-    // Show success message
-    setTimeout(() => {
-        showOrderSuccessModal(order);
-    }, 300);
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // Refresh merchandise grid to reflect new stock levels
-    loadMerchandiseGrid();
+    // Initialize and show modal
+    const modal = new bootstrap.Modal(document.getElementById('orderModal'));
+    modal.show();
+    
+    // Handle quantity change for total calculation
+    const quantitySelect = document.getElementById('quantity');
+    const totalAmountInput = document.getElementById('totalAmount');
+    
+    quantitySelect.addEventListener('change', function() {
+        const quantity = parseInt(this.value);
+        const total = item.price * quantity;
+        totalAmountInput.value = `₱${total}`;
+    });
+    
+    // Handle order submission
+    document.getElementById('submitOrder').addEventListener('click', function() {
+        const customerName = document.getElementById('customerName').value.trim();
+        const studentId = document.getElementById('studentId').value.trim();
+        const contactNumber = document.getElementById('contactNumber').value.trim();
+        const quantity = parseInt(document.getElementById('quantity').value);
+        
+        if (!customerName) {
+            alert('Please enter your full name.');
+            return;
+        }
+        
+        // Create order
+        const orderData = {
+            itemId: item.id,
+            itemName: item.name,
+            itemPrice: item.price,
+            customerName: customerName,
+            studentId: studentId || null,
+            contactNumber: contactNumber || null,
+            quantity: quantity,
+            totalAmount: item.price * quantity,
+            status: 'reviewing'
+        };
+        
+        // Reduce stock
+        item.stock -= quantity;
+        
+        // Add to orders
+        const order = orderSystem.addOrder(orderData);
+        
+        // Close modal
+        modal.hide();
+        
+        // Show success message
+        showOrderSuccessModal(order);
+        
+        // Refresh merchandise grid to update stock
+        loadMerchandiseGrid();
+        
+        // Refresh orders display if visible
+        loadOrdersDisplay();
+    });
 }
 
 // Show order success modal
 function showOrderSuccessModal(order) {
-    const successContent = `
-        <div class="text-center">
-            <div class="mb-4">
-                <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+    const successModalHTML = `
+        <div class="modal fade" id="orderSuccessModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-check-circle me-2"></i>Order Successful!
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                        </div>
+                        
+                        <p class="lead text-center">Your order has been received and is being reviewed.</p>
+                        
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <p class="mb-2"><strong>Order ID:</strong> ${order.id}</p>
+                                <p class="mb-2"><strong>Item:</strong> ${order.itemName}</p>
+                                <p class="mb-2"><strong>Quantity:</strong> ${order.quantity}</p>
+                                <p class="mb-2"><strong>Total Amount:</strong> ₱${order.totalAmount}</p>
+                                <p class="mb-0"><strong>Status:</strong> Under Review</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Next Steps:</h6>
+                            <ol>
+                                <li>Send payment to:
+                                    <ul class="mt-2">
+                                        <li><strong>GCash:</strong> 0915-123-4567 (PSSE Treasurer)</li>
+                                        <li><strong>BPI:</strong> 1234-5678-90 (Philippine Society of Software Engineers)</li>
+                                    </ul>
+                                </li>
+                                <li class="mt-2">Visit our office or find our treasurer during these times:
+                                    <ul class="mt-2">
+                                        <li><strong>Monday-Friday:</strong> 10:00 AM - 4:00 PM</li>
+                                        <li><strong>Location:</strong> CAS Building, Room 301</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                    </div>
+                </div>
             </div>
-            <h4>Order Placed Successfully!</h4>
-            <p class="text-muted">Your order has been received and is being reviewed.</p>
-            
-            <div class="order-summary mt-4 p-3 bg-light rounded">
-                <h6>Order Details:</h6>
-                <p><strong>Order ID:</strong> ${order.id}</p>
-                <p><strong>Item:</strong> ${order.itemName}</p>
-                <p><strong>Quantity:</strong> ${order.quantity}</p>
-                <p><strong>Total Amount:</strong> ₱${order.totalAmount}</p>
-                <p><strong>Status:</strong> Under Review</p>
-            </div>
-            
-            <div class="alert alert-info mt-3">
-                <strong>What's Next?</strong><br>
-                We'll review your order and contact you within 24 hours with payment instructions.
-            </div>
-            
-            <div class="mt-4">
-                <h6>Payment Instructions:</h6>
-                <p class="small text-muted">Send payment to:</p>
-                <p class="small">
-                    <strong>GCash:</strong> 0915-123-4567 (PSSE Treasurer)<br>
-                    <strong>BPI:</strong> 1234-5678-90 (Philippine Society of Software Engineers)
-                </p>
-            </div>
-            
-            <div class="mt-4">
-                <h6>Pickup Information:</h6>
-                <p class="small text-muted">Visit our office or find our treasurer during these times:</p>
-                <p class="small">
-                    <strong>Monday-Friday:</strong> 10:00 AM - 4:00 PM<br>
-                    <strong>Location:</strong> CAS Building, Room 301
-                </p>
-            </div>
-            
-            <button type="button" class="btn btn-primary contact-btn mt-3">Contact Us</button>
         </div>
     `;
     
-    showModal('Order Confirmation', successContent);
+    // Remove existing success modal if any
+    const existingSuccessModal = document.getElementById('orderSuccessModal');
+    if (existingSuccessModal) {
+        existingSuccessModal.remove();
+    }
+    
+    // Add success modal to body
+    document.body.insertAdjacentHTML('beforeend', successModalHTML);
+    
+    // Show success modal
+    const successModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
+    successModal.show();
 }
 
-// Load and display orders
+// Initialize modal handlers
+function initModalHandlers() {
+    console.log('Modal handlers initialized');
+}
+
+// Load orders display
 function loadOrdersDisplay() {
     const ordersContainer = document.getElementById('ordersContainer');
     if (!ordersContainer) return;
     
-    if (orderSystem.orders.length === 0) {
+    const orders = orderSystem.orders;
+    
+    if (orders.length === 0) {
         ordersContainer.innerHTML = `
-            <div class="text-center py-5">
-                <i class="fas fa-shopping-bag text-muted" style="font-size: 3rem;"></i>
-                <p class="mt-3 text-muted">No orders found. Start shopping to see your orders here!</p>
+            <div class="text-center py-4">
+                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                <h5>No orders found</h5>
+                <p class="text-muted">Start shopping to see your orders here!</p>
             </div>
         `;
         return;
     }
     
-    const ordersHTML = orderSystem.orders.map(order => {
-        const statusInfo = getOrderStatusInfo(order.status);
+    const ordersHTML = orders.map(order => {
         const createdDate = new Date(order.createdAt).toLocaleDateString();
         
         return `
             <div class="order-card">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div>
-                        <h6 class="mb-1">${order.itemName}</h6>
-                        <small class="text-muted">Order ID: ${order.id}</small>
-                    </div>
-                    <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-1">Order ${order.id}</h6>
+                    <span class="status-badge status-${order.status}">${order.status}</span>
                 </div>
-                
+                <p class="mb-2"><strong>${order.itemName}</strong></p>
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-sm-6">
                         <p class="mb-1"><strong>Customer:</strong> ${order.customerName}</p>
-                        <p class="mb-1"><strong>Student ID:</strong> ${order.studentId}</p>
-                        <p class="mb-1"><strong>Contact:</strong> ${order.contactNumber}</p>
+                        ${order.studentId ? `<p class="mb-1"><strong>Student ID:</strong> ${order.studentId}</p>` : ''}
+                        ${order.contactNumber ? `<p class="mb-1"><strong>Contact:</strong> ${order.contactNumber}</p>` : ''}
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-sm-6">
                         <p class="mb-1"><strong>Quantity:</strong> ${order.quantity}</p>
                         <p class="mb-1"><strong>Total:</strong> ₱${order.totalAmount}</p>
                         <p class="mb-1"><strong>Date:</strong> ${createdDate}</p>
                     </div>
-                </div>
-                
-                <div class="mt-3">
-                    <small class="text-muted">Current Status: ${getOrderStatusInfo(order.status).text}</small>
                 </div>
             </div>
         `;
@@ -647,140 +708,97 @@ function loadOrdersDisplay() {
     ordersContainer.innerHTML = ordersHTML;
 }
 
-// Get order status information
-function getOrderStatusInfo(status) {
-    const statusMap = {
-        'reviewing': { text: 'Under Review', class: 'status-reviewing' },
-        'awaiting-payment': { text: 'Awaiting Payment', class: 'status-awaiting-payment' },
-        'pickup': { text: 'Ready for Pickup', class: 'status-pickup' },
-        'completed': { text: 'Completed', class: 'status-completed' },
-        'cancelled': { text: 'Cancelled', class: 'status-cancelled' }
-    };
-    
-    return statusMap[status] || { text: 'Unknown', class: 'status-reviewing' };
-}
-
-// Modal system
-let currentModalInstance = null;
-
-function initModalHandlers() {
-    // Initialize any existing modals on the page
-    const existingModals = document.querySelectorAll('.modal');
-    existingModals.forEach(modal => {
-        modal.addEventListener('hidden.bs.modal', function() {
-            if (currentModalInstance) {
-                currentModalInstance = null;
-            }
-        });
-    });
-}
-
-function showModal(title, content) {
-    // Remove any existing dynamic modal
-    const existingModal = document.getElementById('dynamicModal');
-    if (existingModal) {
-        existingModal.remove();
+// Toggle orders section visibility
+function toggleOrdersSection() {
+    const ordersSection = document.getElementById('ordersSection');
+    if (ordersSection) {
+        ordersSection.classList.toggle('d-none');
+        loadOrdersDisplay(); // Refresh orders when showing
     }
-    
-    // Create modal element
-    const modal = createModal();
-    modal.querySelector('.modal-title').textContent = title;
-    modal.querySelector('.modal-body').innerHTML = `... ${content}`;
-    
-    // Add to DOM
-    document.body.appendChild(modal);
-    
-    // Create new Bootstrap modal instance
-    currentModalInstance = new bootstrap.Modal(modal);
-    
-    // Add event listener for when modal is hidden
-    modal.addEventListener('hidden.bs.modal', function() {
-        currentModalInstance = null;
-    }, { once: true });
-    
-    // Show modal
-    currentModalInstance.show();
 }
 
-// Create main modal element with fixed structure
-function createModal() {
-    const modalHTML = `
-        <div class="modal fade" id="dynamicModal" tabindex="-1" aria-labelledby="dynamicModalLabel" aria-hidden="true">
+// ========================================================================
+// CONTACT INFORMATION MODAL
+// ========================================================================
+
+// Function to show contact modal
+function showContactModal() {
+    const contactModalHTML = `
+        <div class="modal fade" id="contactModal" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="dynamicModalLabel"></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">
+                            <i class="fas fa-envelope me-2"></i>Contact PSSE
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <!-- Content will be inserted here -->
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fab fa-facebook fa-3x text-primary mb-3"></i>
+                                        <h6>PSSE Official Facebook Page</h6>
+                                        <p class="text-muted mb-3">Follow us for updates and announcements</p>
+                                        <a href="#" class="btn btn-primary">Visit Page</a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-envelope fa-3x text-primary mb-3"></i>
+                                        <h6>psse.cpu@gmail.com</h6>
+                                        <p class="text-muted mb-3">Send us your questions and concerns</p>
+                                        <a href="mailto:psse.cpu@gmail.com" class="btn btn-primary">Send Email</a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                        <h6>Contact any PSSE Officer</h6>
+                                        <p class="text-muted mb-3">Reach out to our leadership team</p>
+                                        <a href="about.html" class="btn btn-primary">View Officers</a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                                        <h6>Visit Our Office</h6>
+                                        <p class="text-muted mb-0">CAS Building, Room 301</p>
+                                        <p class="text-muted mb-3">Mon-Fri: 10AM-4PM</p>
+                                        <button class="btn btn-primary" disabled>Visit Us</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
         </div>
     `;
     
-    const modalElement = document.createElement('div');
-    modalElement.innerHTML = modalHTML;
-    const modal = modalElement.firstElementChild;
+    // Remove existing contact modal if any
+    const existingContactModal = document.getElementById('contactModal');
+    if (existingContactModal) {
+        existingContactModal.remove();
+    }
     
-    // Add contact button functionality with proper modal handling
-    modal.querySelector('.contact-btn')?.addEventListener('click', function() {
-        // Close current modal first, then show contact modal after a delay
-        if (currentModalInstance) {
-            currentModalInstance.hide();
-            // Wait for the modal to close before showing the new one
-            setTimeout(() => {
-                showContactModal();
-            }, 300);
-        } else {
-            showContactModal();
-        }
-    });
+    // Add contact modal to body
+    document.body.insertAdjacentHTML('beforeend', contactModalHTML);
     
-    return modal;
-}
-
-// Separate function for contact modal to avoid recursion issues
-function showContactModal() {
-    const contactContent = `
-        <div class="text-center">
-            <h4 class="mb-4">Contact PSSE</h4>
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <div class="contact-method p-3 border rounded">
-                        <i class="fab fa-facebook text-primary mb-2" style="font-size: 2rem;"></i>
-                        <h6>Facebook</h6>
-                        <p class="small text-muted">PSSE Official Facebook Page</p>
-                        <a href="#" class="btn btn-sm btn-outline-primary">Visit Page</a>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="contact-method p-3 border rounded">
-                        <i class="fas fa-envelope text-primary mb-2" style="font-size: 2rem;"></i>
-                        <h6>Email</h6>
-                        <p class="small text-muted">psse.cpu@gmail.com</p>
-                        <a href="mailto:psse.cpu@gmail.com" class="btn btn-sm btn-outline-primary">Send Email</a>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="contact-method p-3 border rounded">
-                        <i class="fas fa-phone text-primary mb-2" style="font-size: 2rem;"></i>
-                        <h6>Phone</h6>
-                        <p class="small text-muted">Contact any PSSE Officer</p>
-                        <button class="btn btn-sm btn-outline-primary" disabled>See Officers</button>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="contact-method p-3 border rounded">
-                        <i class="fas fa-map-marker-alt text-primary mb-2" style="font-size: 2rem;"></i>
-                        <h6>Visit Us</h6>
-                        <p class="small text-muted">CAS Building, Room 301<br>Mon-Fri: 10AM-4PM</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    showModal('Contact Information', contactContent);
+    // Show contact modal
+    const contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
+    contactModal.show();
 }
