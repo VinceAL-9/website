@@ -784,6 +784,9 @@ function initEnhancedModalHandlers() {
     }
 }
 
+// Global variable to store the order modal instance
+let orderModalInstance = null;
+
 // Open order modal with item details
 function openOrderModal(itemId) {
     const item = getItemById(itemId);
@@ -806,9 +809,13 @@ function openOrderModal(itemId) {
         document.getElementById('itemId').value = itemId;
         updateOrderTotal();
         
+        // Create or reuse modal instance
+        if (!orderModalInstance) {
+            orderModalInstance = new bootstrap.Modal(modal);
+        }
+        
         // Show modal
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
+        orderModalInstance.show();
     }
 }
 
@@ -855,8 +862,9 @@ function handleOrderSubmission(e) {
     showNotification(`Order ${order.id} placed successfully!`, 'success');
     
     // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
-    modal.hide();
+    if (orderModalInstance) {
+        orderModalInstance.hide();
+    }
     
     // Refresh merchandise display
     loadMerchandiseGrid();
