@@ -799,7 +799,7 @@ function openOrderModal(itemId) {
     const modal = document.getElementById('orderModal');
     if (modal) {
         modal.querySelector('#orderItemName').textContent = item.name;
-        modal.querySelector('#orderItemPrice').textContent = `₱${item.price}`;
+        modal.querySelector('#orderItemPrice').textContent = `${item.price}`;
         modal.querySelector('#orderItemImage').src = item.image;
         modal.querySelector('#orderItemDescription').textContent = item.description;
         modal.querySelector('#itemId').value = itemId;
@@ -912,7 +912,7 @@ function updateOrderTotal() {
         if (item) {
             const total = item.price * quantity;
             totalAmountInput.value = total;
-            totalDisplay.textContent = `₱${total}`;
+            totalDisplay.textContent = `${total}`;
         }
     }
 }
