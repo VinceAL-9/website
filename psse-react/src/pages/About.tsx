@@ -1,18 +1,51 @@
-import { FaQuoteLeft } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FaQuoteLeft, FaSpinner } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
-import { Card, CardBody } from '../components/common';
+import { Card, CardBody, Button } from '../components/common';
 import { OfficerCard } from '../components/features';
-import { officers, officerCategories } from '../data/officers';
+import { officersApi } from '../services/api';
+import { groupOfficersByCategory, mapApiOfficerToOfficer } from '../lib';
+import type { GroupedOfficers } from '../lib';
 import { useScrollAnimationList } from '../hooks';
-import type { OfficerCategory } from '../types';
-
-const categoryOrder: OfficerCategory[] = ['executive', 'administrative', 'audit', 'communications'];
 
 export const About = () => {
-  const { containerRef, visibleItems } = useScrollAnimationList(officers.length, 50);
+  const [groupedOfficers, setGroupedOfficers] = useState<GroupedOfficers[]>([]);
+  const [totalOfficers, setTotalOfficers] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getOfficersByCategory = (category: OfficerCategory) =>
-    officers.filter((officer) => officer.category === category);
+  const { containerRef, visibleItems } = useScrollAnimationList(totalOfficers, 50);
+
+  useEffect(() => {
+    const fetchOfficers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await officersApi.getOfficers();
+        const grouped = groupOfficersByCategory(response);
+        
+        setGroupedOfficers(grouped);
+        setTotalOfficers(response.length);
+      } catch (err) {
+        console.error('Failed to fetch officers:', err);
+        setError('Failed to load officers. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOfficers();
+  }, []);
+
+  // Calculate the starting index for each officer within the flat list
+  const getOfficerIndex = (groupIndex: number, officerIndex: number): number => {
+    let index = 0;
+    for (let i = 0; i < groupIndex; i++) {
+      index += groupedOfficers[i].officers.length;
+    }
+    return index + officerIndex;
+  };
 
   return (
     <PageLayout>
@@ -59,47 +92,64 @@ export const About = () => {
             </p>
           </div>
 
-          <div ref={containerRef}>
-            {categoryOrder.map((category) => {
-              const categoryOfficers = getOfficersByCategory(category);
-              const categoryInfo = officerCategories[category];
-              const startIndex = officers.findIndex((o) => o.category === category);
-
-              return (
-                <div key={category} className="mb-12">
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <FaSpinner className="w-8 h-8 text-psse-accent animate-spin" />
+              <span className="ml-3 text-gray-600">Loading officers...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button variant="primary" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </div>
+          ) : groupedOfficers.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-600">No officers to display at this time.</p>
+            </div>
+          ) : (
+            <div ref={containerRef}>
+              {groupedOfficers.map((group, groupIndex) => (
+                <div key={group.category} className="mb-12">
                   <div className="text-center mb-6">
                     <h3 className="text-2xl font-bold text-psse-accent mb-2">
-                      {categoryInfo.title}
+                      {group.categoryInfo.title}
                     </h3>
-                    <p className="text-gray-600">{categoryInfo.description}</p>
+                    <p className="text-gray-600">{group.categoryInfo.description}</p>
                   </div>
 
                   <div
                     className={`grid gap-4 ${
-                      category === 'executive'
+                      group.category === 'executive'
                         ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
-                        : category === 'administrative'
+                        : group.category === 'administrative'
                         ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7'
                         : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
                     }`}
                   >
-                    {categoryOfficers.map((officer, index) => (
-                      <div
-                        key={officer.id}
-                        className={`transition-all duration-500 ${
-                          visibleItems.has(startIndex + index)
-                            ? 'opacity-100 translate-y-0'
-                            : 'opacity-0 translate-y-8'
-                        }`}
-                      >
-                        <OfficerCard officer={officer} />
-                      </div>
-                    ))}
+                    {group.officers.map((apiOfficer, officerIndex) => {
+                      const officer = mapApiOfficerToOfficer(apiOfficer);
+                      const flatIndex = getOfficerIndex(groupIndex, officerIndex);
+                      
+                      return (
+                        <div
+                          key={officer.id}
+                          className={`transition-all duration-500 ${
+                            visibleItems.has(flatIndex)
+                              ? 'opacity-100 translate-y-0'
+                              : 'opacity-0 translate-y-8'
+                          }`}
+                        >
+                          <OfficerCard officer={officer} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

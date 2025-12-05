@@ -4,6 +4,7 @@ export * from './api.types';
 // Officer Types
 export interface Officer {
   id: string;
+  name?: string;
   title: string;
   image: string;
   category: OfficerCategory;

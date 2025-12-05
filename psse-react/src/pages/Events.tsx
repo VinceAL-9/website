@@ -1,21 +1,93 @@
-import { useState } from 'react';
-import { FaCalendarCheck, FaGraduationCap } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FaCalendarCheck, FaGraduationCap, FaSpinner } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
 import { Card, CardBody, Button, Modal } from '../components/common';
 import { EventCard } from '../components/features';
-import { events, upcomingEvents } from '../data/events';
+import { eventsApi } from '../services/api';
 import { useScrollAnimationList } from '../hooks';
+import type { ApiEvent, Event, BadgeVariant } from '../types';
+
+/**
+ * Maps an API event to the frontend Event type for EventCard compatibility
+ */
+function mapApiEventToEvent(apiEvent: ApiEvent): Event {
+  // Determine badge based on event title/description
+  const getBadge = (event: ApiEvent): { text: string; variant: BadgeVariant } => {
+    const title = event.title.toLowerCase();
+    const desc = event.description.toLowerCase();
+    
+    if (title.includes('hackathon')) return { text: 'Hackathon', variant: 'danger' };
+    if (title.includes('workshop')) return { text: 'Workshop', variant: 'secondary' };
+    if (title.includes('competition') || title.includes('championship')) 
+      return { text: 'Competition', variant: 'primary' };
+    if (title.includes('ceremony') || title.includes('induction')) 
+      return { text: 'Ceremony', variant: 'info' };
+    if (title.includes('contest')) return { text: 'Contest', variant: 'warning' };
+    if (title.includes('talk') || title.includes('seminar')) 
+      return { text: 'Talk', variant: 'primary' };
+    if (title.includes('career') || title.includes('fair')) 
+      return { text: 'Career', variant: 'success' };
+    if (desc.includes('national')) return { text: 'National Competition', variant: 'success' };
+    
+    return { text: 'Event', variant: 'primary' };
+  };
+
+  return {
+    id: String(apiEvent.id),
+    title: apiEvent.title,
+    description: apiEvent.description,
+    image: apiEvent.imageUrl,
+    date: new Date(apiEvent.date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long',
+      day: apiEvent.isUpcoming ? 'numeric' : undefined 
+    }),
+    badge: getBadge(apiEvent),
+    stats: apiEvent.location || '',
+    isUpcoming: apiEvent.isUpcoming,
+  };
+}
 
 export const Events = () => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [pastEvents, setPastEvents] = useState<Event[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const { containerRef: eventsRef, visibleItems: visibleEvents } = useScrollAnimationList(
-    events.length,
+    pastEvents.length,
     100
   );
   const { containerRef: upcomingRef, visibleItems: visibleUpcoming } = useScrollAnimationList(
     upcomingEvents.length,
     150
   );
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch all events in parallel
+        const [pastResponse, upcomingResponse] = await Promise.all([
+          eventsApi.getPastEvents(),
+          eventsApi.getUpcomingEvents(),
+        ]);
+
+        setPastEvents(pastResponse.map(mapApiEventToEvent));
+        setUpcomingEvents(upcomingResponse.map(mapApiEventToEvent));
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+        setError('Failed to load events. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   return (
     <PageLayout>
@@ -32,21 +104,39 @@ export const Events = () => {
       {/* Events Grid */}
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div
-            ref={eventsRef}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {events.map((event, index) => (
-              <div
-                key={event.id}
-                className={`transition-all duration-500 ${
-                  visibleEvents.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
-              >
-                <EventCard event={event} />
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <FaSpinner className="w-8 h-8 text-psse-accent animate-spin" />
+              <span className="ml-3 text-gray-600">Loading events...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button variant="primary" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </div>
+          ) : pastEvents.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-600">No past events to display.</p>
+            </div>
+          ) : (
+            <div
+              ref={eventsRef}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {pastEvents.map((event, index) => (
+                <div
+                  key={event.id}
+                  className={`transition-all duration-500 ${
+                    visibleEvents.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                  }`}
+                >
+                  <EventCard event={event} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -55,35 +145,45 @@ export const Events = () => {
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Upcoming Events</h2>
 
-          <div ref={upcomingRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {upcomingEvents.map((event, index) => (
-              <Card
-                key={event.id}
-                className={`transition-all duration-500 ${
-                  visibleUpcoming.has(index)
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 translate-y-8'
-                }`}
-              >
-                <CardBody>
-                  <div className="flex items-start gap-4">
-                    <div className="shrink-0">
-                      {index === 0 ? (
-                        <FaCalendarCheck className="w-10 h-10 text-psse-accent" />
-                      ) : (
-                        <FaGraduationCap className="w-10 h-10 text-green-500" />
-                      )}
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <FaSpinner className="w-6 h-6 text-psse-accent animate-spin" />
+            </div>
+          ) : upcomingEvents.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600">No upcoming events at this time. Check back soon!</p>
+            </div>
+          ) : (
+            <div ref={upcomingRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {upcomingEvents.map((event, index) => (
+                <Card
+                  key={event.id}
+                  className={`transition-all duration-500 ${
+                    visibleUpcoming.has(index)
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-8'
+                  }`}
+                >
+                  <CardBody>
+                    <div className="flex items-start gap-4">
+                      <div className="shrink-0">
+                        {index === 0 ? (
+                          <FaCalendarCheck className="w-10 h-10 text-psse-accent" />
+                        ) : (
+                          <FaGraduationCap className="w-10 h-10 text-green-500" />
+                        )}
+                      </div>
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-1">{event.title}</h5>
+                        <p className="text-gray-600 text-sm mb-2">{event.description}</p>
+                        <span className="text-sm text-gray-500">{event.date}</span>
+                      </div>
                     </div>
-                    <div>
-                      <h5 className="text-lg font-semibold text-gray-900 mb-1">{event.title}</h5>
-                      <p className="text-gray-600 text-sm mb-2">{event.description}</p>
-                      <span className="text-sm text-gray-500">{event.date}</span>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

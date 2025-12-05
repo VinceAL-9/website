@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaHandshake,
@@ -9,11 +9,16 @@ import {
   FaCode,
   FaBug,
   FaUsers,
+  FaSpinner,
+  FaArrowRight,
 } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
 import { Button, Card, CardBody, Badge, Modal } from '../components/common';
+import { EventCard } from '../components/features';
 import { coreActivities, studentLifeItems, techStack } from '../data/events';
+import { eventsApi } from '../services/api';
 import { useScrollAnimationList } from '../hooks';
+import type { ApiEvent, Event, BadgeVariant } from '../types';
 
 // Icon mapping for activities
 const activityIcons: Record<string, React.ReactNode> = {
@@ -31,8 +36,50 @@ const studentLifeIcons: Record<string, React.ReactNode> = {
   users: <FaUsers className="w-8 h-8 text-psse-accent" />,
 };
 
+/**
+ * Maps an API event to the frontend Event type for EventCard compatibility
+ */
+function mapApiEventToEvent(apiEvent: ApiEvent): Event {
+  const getBadge = (event: ApiEvent): { text: string; variant: BadgeVariant } => {
+    const title = event.title.toLowerCase();
+    
+    if (title.includes('hackathon')) return { text: 'Hackathon', variant: 'danger' };
+    if (title.includes('workshop')) return { text: 'Workshop', variant: 'secondary' };
+    if (title.includes('competition') || title.includes('championship')) 
+      return { text: 'Competition', variant: 'primary' };
+    if (title.includes('ceremony') || title.includes('induction')) 
+      return { text: 'Ceremony', variant: 'info' };
+    if (title.includes('contest')) return { text: 'Contest', variant: 'warning' };
+    if (title.includes('talk') || title.includes('seminar')) 
+      return { text: 'Talk', variant: 'primary' };
+    if (title.includes('career') || title.includes('fair')) 
+      return { text: 'Career', variant: 'success' };
+    
+    return { text: 'Upcoming', variant: 'success' };
+  };
+
+  return {
+    id: String(apiEvent.id),
+    title: apiEvent.title,
+    description: apiEvent.description,
+    image: apiEvent.imageUrl,
+    date: new Date(apiEvent.date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long',
+      day: 'numeric',
+    }),
+    badge: getBadge(apiEvent),
+    stats: apiEvent.location || '',
+    isUpcoming: apiEvent.isUpcoming,
+  };
+}
+
 export const Home = () => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+
   const { containerRef: activitiesRef, visibleItems: visibleActivities } = useScrollAnimationList(
     coreActivities.length,
     100
@@ -45,6 +92,31 @@ export const Home = () => {
     studentLifeItems.length,
     100
   );
+  const { containerRef: eventsRef, visibleItems: visibleEvents } = useScrollAnimationList(
+    upcomingEvents.length,
+    100
+  );
+
+  useEffect(() => {
+    const fetchUpcomingEvents = async () => {
+      try {
+        setEventsLoading(true);
+        setEventsError(null);
+        
+        const response = await eventsApi.getUpcomingEvents();
+        // Limit to 3 upcoming events for the home page
+        const limitedEvents = response.slice(0, 3).map(mapApiEventToEvent);
+        setUpcomingEvents(limitedEvents);
+      } catch (err) {
+        console.error('Failed to fetch upcoming events:', err);
+        setEventsError('Failed to load events.');
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+
+    fetchUpcomingEvents();
+  }, []);
 
   return (
     <PageLayout>
@@ -150,8 +222,66 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Student Life Section */}
+      {/* Latest Events Section */}
       <section className="py-16 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest Events</h2>
+            <p className="text-lg text-gray-600">
+              Check out our upcoming activities and events
+            </p>
+          </div>
+
+          {eventsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <FaSpinner className="w-8 h-8 text-psse-accent animate-spin" />
+              <span className="ml-3 text-gray-600">Loading events...</span>
+            </div>
+          ) : eventsError ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">{eventsError}</p>
+            </div>
+          ) : upcomingEvents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 mb-4">No upcoming events at this time.</p>
+              <Link to="/events">
+                <Button variant="outline">
+                  View Past Events
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div
+                ref={eventsRef}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
+              >
+                {upcomingEvents.map((event, index) => (
+                  <div
+                    key={event.id}
+                    className={`transition-all duration-500 ${
+                      visibleEvents.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                    }`}
+                  >
+                    <EventCard event={event} />
+                  </div>
+                ))}
+              </div>
+              <div className="text-center">
+                <Link to="/events">
+                  <Button variant="primary">
+                    View All Events
+                    <FaArrowRight className="ml-2 inline-block" />
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Student Life Section */}
+      <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Student Life</h2>

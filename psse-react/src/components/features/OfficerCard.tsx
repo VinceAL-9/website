@@ -1,4 +1,4 @@
-import type { Officer } from '../../types';
+import type { Officer } from '../../../src/types';
 
 interface OfficerCardProps {
   officer: Officer;
@@ -12,13 +12,16 @@ export const OfficerCard = ({ officer }: OfficerCardProps) => {
           <div className="mb-4">
             <img
               src={officer.image}
-              alt={officer.title}
+              alt={officer.name || officer.title}
               className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-psse-accent/30 group-hover:border-psse-accent transition-colors"
               onError={(e) => {
                 e.currentTarget.src = '/images/placeholder-image.jpg';
               }}
             />
           </div>
+          {officer.name && (
+            <p className="text-psse-accent font-semibold text-sm mb-1">{officer.name}</p>
+          )}
           <h6 className="text-white font-medium text-sm">{officer.title}</h6>
         </div>
       </div>
