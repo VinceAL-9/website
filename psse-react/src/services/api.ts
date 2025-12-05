@@ -5,8 +5,11 @@ import type {
   ApiProduct,
   ApiOrder,
   CreateOrderDto,
+  CreateEventDto,
+  UpdateEventDto,
   AuthResponse,
 } from '../types';
+import { OrderStatus } from '../types/api.types';
 
 /**
  * Events API
@@ -46,6 +49,29 @@ export const eventsApi = {
       params: { isUpcoming: false },
     });
     return response.data;
+  },
+
+  /**
+   * Create a new event (Admin)
+   */
+  createEvent: async (eventData: CreateEventDto): Promise<ApiEvent> => {
+    const response = await axiosInstance.post<ApiEvent>('/events', eventData);
+    return response.data;
+  },
+
+  /**
+   * Update an event (Admin)
+   */
+  updateEvent: async (id: number, eventData: UpdateEventDto): Promise<ApiEvent> => {
+    const response = await axiosInstance.patch<ApiEvent>(`/events/${id}`, eventData);
+    return response.data;
+  },
+
+  /**
+   * Delete an event (Admin)
+   */
+  deleteEvent: async (id: number): Promise<void> => {
+    await axiosInstance.delete(`/events/${id}`);
   },
 };
 
@@ -156,6 +182,14 @@ export const ordersApi = {
    */
   getOrder: async (id: number): Promise<ApiOrder> => {
     const response = await axiosInstance.get<ApiOrder>(`/orders/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Update order status (Admin)
+   */
+  updateOrderStatus: async (id: number, status: OrderStatus): Promise<ApiOrder> => {
+    const response = await axiosInstance.patch<ApiOrder>(`/orders/${id}`, { status });
     return response.data;
   },
 };

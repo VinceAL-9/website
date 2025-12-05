@@ -13,7 +13,7 @@ const axiosInstance: AxiosInstance = axios.create({
 // Request interceptor to attach JWT token
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,7 +30,7 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized access - clear token and redirect
-      localStorage.removeItem('token');
+      localStorage.removeItem('access_token');
       // Optionally redirect to login page
       // window.location.href = '/login';
     }

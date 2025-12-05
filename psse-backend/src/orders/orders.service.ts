@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
-import { CreateOrderDto } from './dto';
+import { CreateOrderDto, UpdateOrderDto } from './dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -158,5 +158,38 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  /**
+   * Updates an order's status.
+   */
+  async update(id: number, updateOrderDto: UpdateOrderDto) {
+    // Verify the order exists
+    const existingOrder = await this.prisma.order.findUnique({
+      where: { id },
+    });
+
+    if (!existingOrder) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    return this.prisma.order.update({
+      where: { id },
+      data: updateOrderDto,
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
   }
 }

@@ -1,0 +1,699 @@
+import { useState, useEffect, type FormEvent } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  FaCalendarAlt,
+  FaShoppingCart,
+  FaUsers,
+  FaSignOutAlt,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaSpinner,
+} from 'react-icons/fa';
+import { eventsApi, ordersApi } from '../../services/api';
+import type {
+  ApiEvent,
+  ApiOrder,
+  CreateEventDto,
+  UpdateEventDto,
+} from '../../types';
+import { OrderStatus } from '../../types/api.types';
+import { Modal, Button } from '../../components/common';
+
+type AdminView = 'events' | 'orders' | 'officers';
+
+interface EventFormData {
+  title: string;
+  date: string;
+  description: string;
+  imageUrl: string;
+  location: string;
+  isUpcoming: boolean;
+}
+
+const initialEventForm: EventFormData = {
+  title: '',
+  date: '',
+  description: '',
+  imageUrl: '',
+  location: '',
+  isUpcoming: true,
+};
+
+const ORDER_STATUS_OPTIONS: { value: OrderStatus; label: string; color: string }[] = [
+  { value: OrderStatus.PENDING_REVIEW, label: 'Pending Review', color: 'bg-yellow-100 text-yellow-800' },
+  { value: OrderStatus.AWAITING_PAYMENT, label: 'Awaiting Payment', color: 'bg-orange-100 text-orange-800' },
+  { value: OrderStatus.READY_PICKUP, label: 'Ready for Pickup', color: 'bg-blue-100 text-blue-800' },
+  { value: OrderStatus.COMPLETED, label: 'Completed', color: 'bg-green-100 text-green-800' },
+  { value: OrderStatus.CANCELLED, label: 'Cancelled', color: 'bg-red-100 text-red-800' },
+];
+
+export const Dashboard = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [currentView, setCurrentView] = useState<AdminView>('events');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Events state
+  const [events, setEvents] = useState<ApiEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ApiEvent | null>(null);
+  const [eventForm, setEventForm] = useState<EventFormData>(initialEventForm);
+  const [eventSubmitting, setEventSubmitting] = useState(false);
+
+  // Orders state
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+
+  // Set view based on URL
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('orders')) {
+      setCurrentView('orders');
+    } else if (path.includes('officers')) {
+      setCurrentView('officers');
+    } else {
+      setCurrentView('events');
+    }
+  }, [location]);
+
+  // Load data based on current view
+  useEffect(() => {
+    if (currentView === 'events') {
+      loadEvents();
+    } else if (currentView === 'orders') {
+      loadOrders();
+    }
+  }, [currentView]);
+
+  const loadEvents = async () => {
+    setEventsLoading(true);
+    setEventsError(null);
+    try {
+      const data = await eventsApi.getEvents();
+      setEvents(data);
+    } catch (err) {
+      setEventsError('Failed to load events. Please try again.');
+      console.error('Error loading events:', err);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const loadOrders = async () => {
+    setOrdersLoading(true);
+    setOrdersError(null);
+    try {
+      const data = await ordersApi.getOrders();
+      setOrders(data);
+    } catch (err) {
+      setOrdersError('Failed to load orders. Please try again.');
+      console.error('Error loading orders:', err);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    navigate('/admin/login');
+  };
+
+  const handleViewChange = (view: AdminView) => {
+    setCurrentView(view);
+    navigate(`/admin/dashboard/${view}`);
+  };
+
+  // Event handlers
+  const openAddEventModal = () => {
+    setEditingEvent(null);
+    setEventForm(initialEventForm);
+    setShowEventModal(true);
+  };
+
+  const openEditEventModal = (event: ApiEvent) => {
+    setEditingEvent(event);
+    setEventForm({
+      title: event.title,
+      date: event.date.split('T')[0], // Format for date input
+      description: event.description,
+      imageUrl: event.imageUrl,
+      location: event.location,
+      isUpcoming: event.isUpcoming,
+    });
+    setShowEventModal(true);
+  };
+
+  const closeEventModal = () => {
+    setShowEventModal(false);
+    setEditingEvent(null);
+    setEventForm(initialEventForm);
+  };
+
+  const handleEventFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setEventForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
+
+  const handleEventSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setEventSubmitting(true);
+
+    try {
+      const eventData: CreateEventDto | UpdateEventDto = {
+        title: eventForm.title,
+        description: eventForm.description,
+        date: new Date(eventForm.date).toISOString(),
+        imageUrl: eventForm.imageUrl,
+        location: eventForm.location,
+        isUpcoming: eventForm.isUpcoming,
+      };
+
+      if (editingEvent) {
+        await eventsApi.updateEvent(editingEvent.id, eventData);
+      } else {
+        await eventsApi.createEvent(eventData as CreateEventDto);
+      }
+
+      closeEventModal();
+      loadEvents();
+    } catch (err) {
+      console.error('Error saving event:', err);
+      alert('Failed to save event. Please try again.');
+    } finally {
+      setEventSubmitting(false);
+    }
+  };
+
+  const handleDeleteEvent = async (event: ApiEvent) => {
+    if (!window.confirm(`Are you sure you want to delete "${event.title}"?`)) {
+      return;
+    }
+
+    try {
+      await eventsApi.deleteEvent(event.id);
+      loadEvents();
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      alert('Failed to delete event. Please try again.');
+    }
+  };
+
+  // Order handlers
+  const handleOrderStatusChange = async (orderId: number, newStatus: OrderStatus) => {
+    setUpdatingOrderId(orderId);
+    try {
+      const updatedOrder = await ordersApi.updateOrderStatus(orderId, newStatus);
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? updatedOrder : order
+        )
+      );
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      alert('Failed to update order status. Please try again.');
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatCurrency = (amount: number | string) => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return `₱${num.toFixed(2)}`;
+  };
+
+  // Sidebar navigation items
+  const navItems = [
+    { id: 'events' as AdminView, label: 'Manage Events', icon: FaCalendarAlt },
+    { id: 'orders' as AdminView, label: 'View Orders', icon: FaShoppingCart },
+    { id: 'officers' as AdminView, label: 'Update Officers', icon: FaUsers },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      {/* Sidebar */}
+      <aside
+        className={`${
+          sidebarOpen ? 'w-64' : 'w-20'
+        } bg-psse-primary text-white transition-all duration-300 flex flex-col`}
+      >
+        {/* Logo/Header */}
+        <div className="p-4 border-b border-psse-light">
+          <h1 className={`font-bold ${sidebarOpen ? 'text-xl' : 'text-sm text-center'}`}>
+            {sidebarOpen ? 'PSSE Admin' : 'PSSE'}
+          </h1>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleViewChange(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                currentView === item.id
+                  ? 'bg-psse-accent text-white'
+                  : 'text-gray-200 hover:bg-psse-light'
+              }`}
+            >
+              <item.icon className="text-lg shrink-0" />
+              {sidebarOpen && <span>{item.label}</span>}
+            </button>
+          ))}
+        </nav>
+
+        {/* Toggle & Logout */}
+        <div className="p-4 border-t border-psse-light space-y-2">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-full px-4 py-2 text-sm text-gray-200 hover:bg-psse-light rounded-lg transition-colors"
+          >
+            {sidebarOpen ? '← Collapse' : '→'}
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+          >
+            <FaSignOutAlt />
+            {sidebarOpen && <span>Logout</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-8 overflow-auto">
+        {/* Events View */}
+        {currentView === 'events' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Manage Events</h2>
+              <Button onClick={openAddEventModal}>
+                <FaPlus className="mr-2" />
+                Add Event
+              </Button>
+            </div>
+
+            {eventsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <FaSpinner className="animate-spin text-3xl text-psse-accent" />
+              </div>
+            ) : eventsError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
+                {eventsError}
+                <button onClick={loadEvents} className="ml-2 underline">
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Event
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Location
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {events.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                          No events found. Click "Add Event" to create one.
+                        </td>
+                      </tr>
+                    ) : (
+                      events.map((event) => (
+                        <tr key={event.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              {event.imageUrl && (
+                                <img
+                                  src={event.imageUrl}
+                                  alt={event.title}
+                                  className="w-10 h-10 rounded-lg object-cover mr-3"
+                                />
+                              )}
+                              <div>
+                                <div className="font-medium text-gray-900">
+                                  {event.title}
+                                </div>
+                                <div className="text-sm text-gray-500 truncate max-w-xs">
+                                  {event.description}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {formatDate(event.date)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {event.location}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                event.isUpcoming
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {event.isUpcoming ? 'Upcoming' : 'Past'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right space-x-2">
+                            <button
+                              onClick={() => openEditEventModal(event)}
+                              className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <FaEdit className="mr-1" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEvent(event)}
+                              className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                            >
+                              <FaTrash className="mr-1" />
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Orders View */}
+        {currentView === 'orders' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">View Orders</h2>
+              <button
+                onClick={loadOrders}
+                className="px-4 py-2 text-sm text-psse-accent hover:bg-psse-accent/10 rounded-lg transition-colors"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {ordersLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <FaSpinner className="animate-spin text-3xl text-psse-accent" />
+              </div>
+            ) : ordersError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
+                {ordersError}
+                <button onClick={loadOrders} className="ml-2 underline">
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Items
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {orders.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                          No orders found.
+                        </td>
+                      </tr>
+                    ) : (
+                      orders.map((order) => (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            #{order.id}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {order.customerName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {order.customerEmail}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              ID: {order.studentId}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {order.orderItems?.length || 0} item(s)
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {formatCurrency(order.totalAmount)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {formatDate(order.createdAt)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              {updatingOrderId === order.id ? (
+                                <FaSpinner className="animate-spin text-psse-accent" />
+                              ) : (
+                                <select
+                                  value={order.status}
+                                  onChange={(e) =>
+                                    handleOrderStatusChange(
+                                      order.id,
+                                      e.target.value as OrderStatus
+                                    )
+                                  }
+                                  className="block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+                                >
+                                  {ORDER_STATUS_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Officers View (Placeholder) */}
+        {currentView === 'officers' && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Update Officers</h2>
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500">
+              <FaUsers className="text-5xl mx-auto mb-4 text-gray-300" />
+              <p>Officer management coming soon.</p>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Event Modal */}
+      <Modal
+        isOpen={showEventModal}
+        onClose={closeEventModal}
+        title={editingEvent ? 'Edit Event' : 'Add New Event'}
+        size="lg"
+      >
+        <form onSubmit={handleEventSubmit} className="space-y-4">
+          {/* Title */}
+          <div>
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Title *
+            </label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              required
+              value={eventForm.title}
+              onChange={handleEventFormChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              placeholder="Event title"
+            />
+          </div>
+
+          {/* Date */}
+          <div>
+            <label
+              htmlFor="date"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Date *
+            </label>
+            <input
+              id="date"
+              name="date"
+              type="date"
+              required
+              value={eventForm.date}
+              onChange={handleEventFormChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Description *
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              required
+              rows={4}
+              value={eventForm.description}
+              onChange={handleEventFormChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent resize-none"
+              placeholder="Event description"
+            />
+          </div>
+
+          {/* Image URL */}
+          <div>
+            <label
+              htmlFor="imageUrl"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Image URL *
+            </label>
+            <input
+              id="imageUrl"
+              name="imageUrl"
+              type="url"
+              required
+              value={eventForm.imageUrl}
+              onChange={handleEventFormChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          {/* Location */}
+          <div>
+            <label
+              htmlFor="location"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Location *
+            </label>
+            <input
+              id="location"
+              name="location"
+              type="text"
+              required
+              value={eventForm.location}
+              onChange={handleEventFormChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              placeholder="Event location"
+            />
+          </div>
+
+          {/* Is Upcoming */}
+          <div className="flex items-center gap-2">
+            <input
+              id="isUpcoming"
+              name="isUpcoming"
+              type="checkbox"
+              checked={eventForm.isUpcoming}
+              onChange={(e) =>
+                setEventForm((prev) => ({ ...prev, isUpcoming: e.target.checked }))
+              }
+              className="w-4 h-4 text-psse-accent border-gray-300 rounded focus:ring-psse-accent"
+            />
+            <label htmlFor="isUpcoming" className="text-sm text-gray-700">
+              Mark as upcoming event
+            </label>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={closeEventModal}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={eventSubmitting}
+            >
+              Cancel
+            </button>
+            <Button type="submit" disabled={eventSubmitting}>
+              {eventSubmitting ? (
+                <>
+                  <FaSpinner className="animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : editingEvent ? (
+                'Update Event'
+              ) : (
+                'Create Event'
+              )}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default Dashboard;
