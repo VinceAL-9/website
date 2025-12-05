@@ -1,0 +1,18 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// PSSE Organization Website - Database Schema
+// Using PostgreSQL hosted on Neon.tech
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===========================================
+// Models will be added here as we build out the application
+// ===========================================
