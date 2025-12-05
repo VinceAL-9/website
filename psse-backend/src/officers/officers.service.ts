@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
+import { CreateOfficerDto, UpdateOfficerDto } from './dto';
 
 @Injectable()
 export class OfficersService {
@@ -10,6 +11,41 @@ export class OfficersService {
       orderBy: {
         order: 'asc',
       },
+    });
+  }
+
+  async findOne(id: number) {
+    const officer = await this.prisma.officer.findUnique({
+      where: { id },
+    });
+
+    if (!officer) {
+      throw new NotFoundException(`Officer with ID ${id} not found`);
+    }
+
+    return officer;
+  }
+
+  async create(createOfficerDto: CreateOfficerDto) {
+    return this.prisma.officer.create({
+      data: createOfficerDto,
+    });
+  }
+
+  async update(id: number, updateOfficerDto: UpdateOfficerDto) {
+    await this.findOne(id);
+
+    return this.prisma.officer.update({
+      where: { id },
+      data: updateOfficerDto,
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+
+    return this.prisma.officer.delete({
+      where: { id },
     });
   }
 }
