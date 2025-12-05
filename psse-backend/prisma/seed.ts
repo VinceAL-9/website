@@ -1,6 +1,7 @@
-import { PrismaClient, Role, Category, OrderStatus } from '@prisma/client';
+import { PrismaClient, Role, Category } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import * as bcrypt from 'bcrypt';
 
 // Initialize Prisma with pg adapter for Neon.tech
 const pool = new Pool({
@@ -16,12 +17,13 @@ async function main() {
   // Seed Admin User
   // ===========================================
   console.log('👤 Seeding admin user...');
+  const hashedPassword = await bcrypt.hash('admin123', 10);
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@psse.org' },
-    update: {},
+    update: { password: hashedPassword },
     create: {
       email: 'admin@psse.org',
-      password: 'password123', // TODO: Replace with hashed password when auth is implemented
+      password: hashedPassword,
       role: Role.ADMIN,
       studentId: 'ADMIN-001',
     },
@@ -29,34 +31,42 @@ async function main() {
   console.log(`   Created admin user: ${adminUser.email}`);
 
   // ===========================================
-  // Seed Officers
+  // Seed Officers (23 positions as per SRS FR4.1)
   // ===========================================
   console.log('👥 Seeding officers...');
   const officers = [
-    {
-      name: 'Juan Dela Cruz',
-      position: 'President',
-      category: 'Executive Board',
-      photoUrl: '/images/officers/president.jpg',
-      academicYear: '2024-2025',
-      order: 1,
-    },
-    {
-      name: 'Maria Santos',
-      position: 'VP Internal',
-      category: 'Executive Board',
-      photoUrl: '/images/officers/vp-internal.jpg',
-      academicYear: '2024-2025',
-      order: 2,
-    },
-    {
-      name: 'Pedro Reyes',
-      position: 'VP External',
-      category: 'Executive Board',
-      photoUrl: '/images/officers/vp-external.jpg',
-      academicYear: '2024-2025',
-      order: 3,
-    },
+    // Executive Board (5 positions)
+    { name: 'Juan Dela Cruz', position: 'President', category: 'Executive Board', photoUrl: '/images/officers/president.jpg', academicYear: '2024-2025', order: 1 },
+    { name: 'Maria Santos', position: 'VP External', category: 'Executive Board', photoUrl: '/images/officers/vp-external.jpg', academicYear: '2024-2025', order: 2 },
+    { name: 'Pedro Reyes', position: 'VP Internal', category: 'Executive Board', photoUrl: '/images/officers/vp-internal.jpg', academicYear: '2024-2025', order: 3 },
+    { name: 'Ana Garcia', position: 'VP Media', category: 'Executive Board', photoUrl: '/images/officers/vp-media.jpg', academicYear: '2024-2025', order: 4 },
+    { name: 'Jose Rizal', position: 'VP Tech', category: 'Executive Board', photoUrl: '/images/officers/vp-tech.jpg', academicYear: '2024-2025', order: 5 },
+
+    // Administrative & Finance (8 positions)
+    { name: 'Carmen Luna', position: 'Secretary', category: 'Administrative & Finance', photoUrl: '/images/officers/secretary.jpg', academicYear: '2024-2025', order: 6 },
+    { name: 'Miguel Torres', position: 'Asst. Secretary', category: 'Administrative & Finance', photoUrl: '/images/officers/asst-secretary.jpg', academicYear: '2024-2025', order: 7 },
+    { name: 'Rosa Flores', position: 'Auditor', category: 'Administrative & Finance', photoUrl: '/images/officers/auditor.jpg', academicYear: '2024-2025', order: 8 },
+    { name: 'Carlos Mendoza', position: 'Asst. Auditor', category: 'Administrative & Finance', photoUrl: '/images/officers/asst-auditor.jpg', academicYear: '2024-2025', order: 9 },
+    { name: 'Isabella Cruz', position: 'Business Manager', category: 'Administrative & Finance', photoUrl: '/images/officers/business-manager.jpg', academicYear: '2024-2025', order: 10 },
+    { name: 'Fernando Aquino', position: 'Asst. Business Manager', category: 'Administrative & Finance', photoUrl: '/images/officers/asst-business-manager.jpg', academicYear: '2024-2025', order: 11 },
+    { name: 'Lucia Bautista', position: 'General Treasurer', category: 'Administrative & Finance', photoUrl: '/images/officers/general-treasurer.jpg', academicYear: '2024-2025', order: 12 },
+    { name: 'Antonio Ramos', position: 'PIO', category: 'Administrative & Finance', photoUrl: '/images/officers/pio.jpg', academicYear: '2024-2025', order: 13 },
+
+    // Representatives (4 positions)
+    { name: 'Patricia Villanueva', position: '1st Year Representative', category: 'Representatives', photoUrl: '/images/officers/1st-year-rep.jpg', academicYear: '2024-2025', order: 14 },
+    { name: 'Roberto Fernandez', position: '2nd Year Representative', category: 'Representatives', photoUrl: '/images/officers/2nd-year-rep.jpg', academicYear: '2024-2025', order: 15 },
+    { name: 'Elena Gonzales', position: '3rd Year Representative', category: 'Representatives', photoUrl: '/images/officers/3rd-year-rep.jpg', academicYear: '2024-2025', order: 16 },
+    { name: 'Marco Dela Rosa', position: '4th Year Representative', category: 'Representatives', photoUrl: '/images/officers/4th-year-rep.jpg', academicYear: '2024-2025', order: 17 },
+
+    // Year Level Treasurers (4 positions)
+    { name: 'Sofia Castillo', position: '1st Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/1st-year-treasurer.jpg', academicYear: '2024-2025', order: 18 },
+    { name: 'Daniel Aguilar', position: '2nd Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/2nd-year-treasurer.jpg', academicYear: '2024-2025', order: 19 },
+    { name: 'Andrea Lim', position: '3rd Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/3rd-year-treasurer.jpg', academicYear: '2024-2025', order: 20 },
+    { name: 'Gabriel Santos', position: '4th Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/4th-year-treasurer.jpg', academicYear: '2024-2025', order: 21 },
+
+    // Ambassadors (2 positions)
+    { name: 'Victoria Tan', position: 'Ambassador', category: 'Ambassadors', photoUrl: '/images/officers/ambassador.jpg', academicYear: '2024-2025', order: 22 },
+    { name: 'Rafael Morales', position: 'Ambassadress', category: 'Ambassadors', photoUrl: '/images/officers/ambassadress.jpg', academicYear: '2024-2025', order: 23 },
   ];
 
   for (const officer of officers) {
@@ -67,7 +77,7 @@ async function main() {
   }
 
   // ===========================================
-  // Seed Events
+  // Seed Events (3 sample events)
   // ===========================================
   console.log('📅 Seeding events...');
   const events = [
@@ -84,10 +94,19 @@ async function main() {
       title: 'Tech Talk: Introduction to Power Systems',
       description:
         'A seminar covering the fundamentals of power systems engineering, featuring industry professionals sharing their insights and experiences.',
-      date: new Date('2024-11-20T10:00:00Z'),
+      date: new Date('2025-02-20T10:00:00Z'),
       imageUrl: '/images/events/tech-talk.jpg',
       location: 'Room 301, EE Building',
-      isUpcoming: false,
+      isUpcoming: true,
+    },
+    {
+      title: 'PSSE Industry Visit: Meralco Power Plant',
+      description:
+        'An educational trip to the Meralco Power Plant to observe real-world power systems operations. Limited slots available!',
+      date: new Date('2025-03-10T08:00:00Z'),
+      imageUrl: '/images/events/industry-visit.jpg',
+      location: 'Meralco Power Plant, Pasig City',
+      isUpcoming: true,
     },
   ];
 
@@ -99,7 +118,7 @@ async function main() {
   }
 
   // ===========================================
-  // Seed Products
+  // Seed Products (5 sample products)
   // ===========================================
   console.log('🛍️ Seeding products...');
   const products = [
@@ -114,9 +133,19 @@ async function main() {
       isFeatured: true,
     },
     {
+      name: 'PSSE Premium Lanyard - Gold Edition',
+      description:
+        'Limited edition gold-accented lanyard with the PSSE emblem. A collector\'s item for true PSSE enthusiasts!',
+      price: 200.0,
+      stock: 25,
+      category: Category.LANYARD,
+      imageUrl: '/images/merch/lanyard-gold.jpg',
+      isFeatured: true,
+    },
+    {
       name: 'PSSE T-Shirt - Black Edition',
       description:
-        'Premium cotton t-shirt in black with the PSSE emblem. Available in various sizes.',
+        'Premium cotton t-shirt in black with the PSSE emblem. Available in various sizes (S, M, L, XL).',
       price: 450.0,
       stock: 30,
       category: Category.TSHIRT,
@@ -126,11 +155,21 @@ async function main() {
     {
       name: 'PSSE T-Shirt - White Edition',
       description:
-        'Premium cotton t-shirt in white with the PSSE emblem. Available in various sizes.',
+        'Premium cotton t-shirt in white with the PSSE emblem. Available in various sizes (S, M, L, XL).',
       price: 450.0,
       stock: 25,
       category: Category.TSHIRT,
       imageUrl: '/images/merch/tshirt-white.jpg',
+      isFeatured: false,
+    },
+    {
+      name: 'PSSE Sticker Pack',
+      description:
+        'A set of 5 high-quality vinyl stickers featuring various PSSE designs. Waterproof and durable!',
+      price: 75.0,
+      stock: 100,
+      category: Category.STICKER,
+      imageUrl: '/images/merch/sticker-pack.jpg',
       isFeatured: false,
     },
   ];
@@ -142,7 +181,14 @@ async function main() {
     console.log(`   Created product: ${created.name}`);
   }
 
+  console.log('');
   console.log('✅ Database seed completed successfully!');
+  console.log('');
+  console.log('📊 Seed Summary:');
+  console.log('   - 1 Admin User (admin@psse.org / admin123)');
+  console.log('   - 23 Officers (Executive Board, Committee Heads, Committee Members)');
+  console.log('   - 3 Events');
+  console.log('   - 5 Products (2 Lanyards, 2 T-Shirts, 1 Sticker Pack)');
 }
 
 main()
