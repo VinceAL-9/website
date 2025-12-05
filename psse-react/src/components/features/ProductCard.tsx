@@ -1,12 +1,14 @@
+import { FaShoppingCart, FaCartPlus } from 'react-icons/fa';
 import { Card, CardImage, CardBody, Badge, Button } from '../common';
 import type { Product } from '../../types';
 
 interface ProductCardProps {
   product: Product;
   onOrder: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
 }
 
-export const ProductCard = ({ product, onOrder }: ProductCardProps) => {
+export const ProductCard = ({ product, onOrder, onAddToCart }: ProductCardProps) => {
   const isOutOfStock = product.stock === 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
 
@@ -40,14 +42,28 @@ export const ProductCard = ({ product, onOrder }: ProductCardProps) => {
             <span className="text-xl font-bold text-psse-accent">₱{product.price}</span>
             <span className="text-sm text-gray-500">Stock: {product.stock}</span>
           </div>
-          <Button
-            variant="primary"
-            fullWidth
-            disabled={isOutOfStock}
-            onClick={() => onOrder(product)}
-          >
-            {isOutOfStock ? 'Out of Stock' : 'Order Now'}
-          </Button>
+          <div className="flex gap-2">
+            {onAddToCart && (
+              <Button
+                variant="secondary"
+                disabled={isOutOfStock}
+                onClick={() => onAddToCart(product)}
+                className="flex-1"
+              >
+                <FaCartPlus className="mr-1" />
+                Add
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              disabled={isOutOfStock}
+              onClick={() => onOrder(product)}
+              className={onAddToCart ? 'flex-1' : 'w-full'}
+            >
+              <FaShoppingCart className="mr-1" />
+              {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
+            </Button>
+          </div>
         </div>
       </CardBody>
     </Card>

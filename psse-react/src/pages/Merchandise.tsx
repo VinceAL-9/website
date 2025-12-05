@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { FaList, FaInfoCircle, FaShoppingCart, FaShoppingBag } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
 import { Button, Modal, Badge } from '../components/common';
-import { ProductCard } from '../components/features';
+import { ProductCard, CheckoutModal } from '../components/features';
 import { useOrders } from '../context';
 import { useScrollAnimationList } from '../hooks';
 import type { Product, OrderFormData, OrderStatus, PaymentStatus } from '../types';
@@ -19,6 +19,7 @@ export const Merchandise = () => {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<OrderFormData>>({
     quantity: 1,
@@ -33,6 +34,8 @@ export const Merchandise = () => {
     getProductById,
     getStatusDisplayText,
     getPaymentStatusDisplayText,
+    addToCart,
+    getCartItemCount,
   } = useOrders();
 
   const filteredProducts = useMemo(() => {
@@ -51,6 +54,15 @@ export const Merchandise = () => {
     setSelectedProduct(product);
     setFormData({ quantity: 1 });
     setIsOrderModalOpen(true);
+  };
+
+  const handleAddToCart = (product: Product) => {
+    const success = addToCart(product.id, 1);
+    if (success) {
+      showNotification(`${product.name} added to cart!`, 'success');
+    } else {
+      showNotification('Insufficient stock available', 'error');
+    }
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,9 +167,26 @@ export const Merchandise = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-psse-accent mb-4">
             PSSE Official Merchandise
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-gray-600 mb-6">
             Support PSSE with our exclusive merchandise designed by our talented members!
           </p>
+          
+          {/* Cart Button */}
+          <div className="flex justify-center">
+            <Button
+              variant="primary"
+              onClick={() => setIsCheckoutModalOpen(true)}
+              className="relative"
+            >
+              <FaShoppingCart className="mr-2" />
+              View Cart
+              {getCartItemCount() > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {getCartItemCount()}
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -198,7 +227,11 @@ export const Merchandise = () => {
                     : 'opacity-0 translate-y-8'
                 }`}
               >
-                <ProductCard product={product} onOrder={handleOrderClick} />
+                <ProductCard
+                  product={product}
+                  onOrder={handleOrderClick}
+                  onAddToCart={handleAddToCart}
+                />
               </div>
             ))}
           </div>
@@ -439,6 +472,12 @@ export const Merchandise = () => {
           </div>
         )}
       </Modal>
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={isCheckoutModalOpen}
+        onClose={() => setIsCheckoutModalOpen(false)}
+      />
     </PageLayout>
   );
 };

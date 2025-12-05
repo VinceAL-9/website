@@ -3,6 +3,12 @@ import type { ReactNode } from 'react';
 import type { Order, OrderFormData, OrderStatus, PaymentStatus, Product } from '../types';
 import { merchandise, getProductById } from '../data/merchandise';
 
+// Cart Item type
+export interface CartItem {
+  productId: string;
+  quantity: number;
+}
+
 // Order Actions
 type OrderAction =
   | { type: 'ADD_ORDER'; payload: Order }
@@ -10,19 +16,25 @@ type OrderAction =
   | { type: 'UPDATE_PAYMENT'; payload: { orderId: string; paymentStatus: PaymentStatus; method?: string; reference?: string } }
   | { type: 'CANCEL_ORDER'; payload: string }
   | { type: 'LOAD_ORDERS'; payload: Order[] }
-  | { type: 'UPDATE_STOCK'; payload: { productId: string; quantity: number } };
+  | { type: 'UPDATE_STOCK'; payload: { productId: string; quantity: number } }
+  | { type: 'ADD_TO_CART'; payload: CartItem }
+  | { type: 'REMOVE_FROM_CART'; payload: string }
+  | { type: 'UPDATE_CART_QUANTITY'; payload: { productId: string; quantity: number } }
+  | { type: 'CLEAR_CART' };
 
 // State
 interface OrderState {
   orders: Order[];
   products: Product[];
   lastOrderId: number;
+  cart: CartItem[];
 }
 
 // Context Type
 interface OrderContextType {
   orders: Order[];
   products: Product[];
+  cart: CartItem[];
   addOrder: (formData: OrderFormData) => Order | null;
   cancelOrder: (orderId: string) => boolean;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
@@ -31,17 +43,25 @@ interface OrderContextType {
   getProductById: (productId: string) => Product | undefined;
   getStatusDisplayText: (status: OrderStatus) => string;
   getPaymentStatusDisplayText: (status: PaymentStatus) => string;
+  addToCart: (productId: string, quantity: number) => boolean;
+  removeFromCart: (productId: string) => void;
+  updateCartQuantity: (productId: string, quantity: number) => boolean;
+  clearCart: () => void;
+  getCartTotal: () => number;
+  getCartItemCount: () => number;
 }
 
 // Initial State
 const getInitialState = (): OrderState => {
   const savedOrders = localStorage.getItem('psseOrders');
   const savedLastId = localStorage.getItem('psseLastOrderId');
+  const savedCart = localStorage.getItem('psseCart');
   
   return {
     orders: savedOrders ? JSON.parse(savedOrders) : [],
     products: [...merchandise],
     lastOrderId: savedLastId ? parseInt(savedLastId) : 1000,
+    cart: savedCart ? JSON.parse(savedCart) : [],
   };
 };
 
@@ -111,6 +131,34 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
     case 'LOAD_ORDERS':
       return { ...state, orders: action.payload };
     
+    case 'ADD_TO_CART': {
+      const existingItem = state.cart.find((item) => item.productId === action.payload.productId);
+      if (existingItem) {
+        const updatedCart = state.cart.map((item) =>
+          item.productId === action.payload.productId
+            ? { ...item, quantity: item.quantity + action.payload.quantity }
+            : item
+        );
+        return { ...state, cart: updatedCart };
+      }
+      return { ...state, cart: [...state.cart, action.payload] };
+    }
+    
+    case 'REMOVE_FROM_CART':
+      return { ...state, cart: state.cart.filter((item) => item.productId !== action.payload) };
+    
+    case 'UPDATE_CART_QUANTITY': {
+      const updatedCart = state.cart.map((item) =>
+        item.productId === action.payload.productId
+          ? { ...item, quantity: action.payload.quantity }
+          : item
+      );
+      return { ...state, cart: updatedCart };
+    }
+    
+    case 'CLEAR_CART':
+      return { ...state, cart: [] };
+    
     default:
       return state;
   }
@@ -131,7 +179,8 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
   useEffect(() => {
     localStorage.setItem('psseOrders', JSON.stringify(state.orders));
     localStorage.setItem('psseLastOrderId', state.lastOrderId.toString());
-  }, [state.orders, state.lastOrderId]);
+    localStorage.setItem('psseCart', JSON.stringify(state.cart));
+  }, [state.orders, state.lastOrderId, state.cart]);
 
   // Generate Order ID
   const generateOrderId = () => `ORD-${state.lastOrderId + 1}`;
@@ -236,9 +285,65 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     return statusMap[status] || status;
   };
 
+  // Add to Cart
+  const addToCart = (productId: string, quantity: number): boolean => {
+    const product = state.products.find((p) => p.id === productId);
+    if (!product) return false;
+
+    const existingCartItem = state.cart.find((item) => item.productId === productId);
+    const currentCartQty = existingCartItem ? existingCartItem.quantity : 0;
+
+    if (product.stock < currentCartQty + quantity) {
+      return false; // Insufficient stock
+    }
+
+    dispatch({ type: 'ADD_TO_CART', payload: { productId, quantity } });
+    return true;
+  };
+
+  // Remove from Cart
+  const removeFromCart = (productId: string): void => {
+    dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+  };
+
+  // Update Cart Quantity
+  const updateCartQuantity = (productId: string, quantity: number): boolean => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return true;
+    }
+
+    const product = state.products.find((p) => p.id === productId);
+    if (!product || product.stock < quantity) {
+      return false;
+    }
+
+    dispatch({ type: 'UPDATE_CART_QUANTITY', payload: { productId, quantity } });
+    return true;
+  };
+
+  // Clear Cart
+  const clearCart = (): void => {
+    dispatch({ type: 'CLEAR_CART' });
+  };
+
+  // Get Cart Total
+  const getCartTotal = (): number => {
+    return state.cart.reduce((total, item) => {
+      const product = state.products.find((p) => p.id === item.productId);
+      return total + (product ? product.price * item.quantity : 0);
+    }, 0);
+  };
+
+  // Get Cart Item Count
+  const getCartItemCount = (): number => {
+    return state.cart.reduce((count, item) => count + item.quantity, 0);
+  };
+
   const value: OrderContextType = {
     orders: state.orders,
     products: state.products,
+    cart: state.cart,
     addOrder,
     cancelOrder,
     updateOrderStatus,
@@ -247,6 +352,12 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     getProductById: getProductByIdFromState,
     getStatusDisplayText,
     getPaymentStatusDisplayText,
+    addToCart,
+    removeFromCart,
+    updateCartQuantity,
+    clearCart,
+    getCartTotal,
+    getCartItemCount,
   };
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
