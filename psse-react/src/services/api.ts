@@ -5,6 +5,7 @@ import type {
   ApiProduct,
   ApiOrder,
   CreateOrderDto,
+  AuthResponse,
 } from '../types';
 
 /**
@@ -164,3 +165,19 @@ export const getEvents = eventsApi.getEvents;
 export const getOfficers = officersApi.getOfficers;
 export const getProducts = productsApi.getProducts;
 export const createOrder = ordersApi.createOrder;
+
+/**
+ * Auth API
+ */
+export const authApi = {
+  /**
+   * Login with email and password
+   */
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    const response = await axiosInstance.post<AuthResponse>('/auth/login', {
+      email,
+      password,
+    });
+    return response.data;
+  },
+};
