@@ -1,3 +1,6 @@
+// Re-export API types
+export * from './api.types';
+
 // Officer Types
 export interface Officer {
   id: string;
