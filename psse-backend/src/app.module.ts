@@ -3,6 +3,10 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma';
+import { EventsModule } from './events';
+import { OfficersModule } from './officers';
+import { ProductsModule } from './products';
+import { AuthModule } from './auth';
 
 @Module({
   imports: [
@@ -11,6 +15,10 @@ import { PrismaModule } from './prisma';
       envFilePath: '.env',
     }),
     PrismaModule,
+    EventsModule,
+    OfficersModule,
+    ProductsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
