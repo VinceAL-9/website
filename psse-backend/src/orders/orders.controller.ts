@@ -2,18 +2,21 @@ import { Controller, Post, Get, Patch, Body, Param, UseGuards } from '@nestjs/co
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
+import { CurrentUser } from '../auth/decorators';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   /**
-   * POST /orders - Public endpoint to create a new order
+   * POST /orders - Create a new order (requires authentication)
    * Creates an order with transactional stock management
+   * The userId is extracted from the JWT token
    */
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  @UseGuards(JwtAuthGuard)
+  create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user: any) {
+    return this.ordersService.create(createOrderDto, user.id);
   }
 
   /**
@@ -22,6 +25,17 @@ export class OrdersController {
   @Get()
   findAll() {
     return this.ordersService.findAll();
+  }
+
+  /**
+   * GET /orders/mine - Get all orders for the authenticated user
+   * Returns transaction history for the logged-in user
+   * NOTE: This route MUST be defined before /:id to avoid "mine" being treated as an ID
+   */
+  @Get('mine')
+  @UseGuards(JwtAuthGuard)
+  findMyOrders(@CurrentUser() user: any) {
+    return this.ordersService.findByUserId(user.id);
   }
 
   /**

@@ -262,9 +262,17 @@ export const ordersApi = {
   },
 
   /**
+   * Get current user's orders (transaction history)
+   */
+  getMyOrders: async (): Promise<ApiOrder[]> => {
+    const response = await axiosInstance.get<ApiOrder[]>('/orders/mine');
+    return response.data;
+  },
+
+  /**
    * Update order status (Admin)
    */
-  updateOrderStatus: async (id: number, status: OrderStatus): Promise<ApiOrder> => {
+  updateOrderStatus: async (id: string, status: OrderStatus): Promise<ApiOrder> => {
     const response = await axiosInstance.patch<ApiOrder>(`/orders/${id}`, { status });
     return response.data;
   },

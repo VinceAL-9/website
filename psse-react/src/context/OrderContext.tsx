@@ -188,9 +188,9 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
 
     try {
       // Build the order items from cart
-      // Convert string productId to number for the API
+      // Use productId as string (UUID format) for the API
       const orderItems = state.cart.map((item) => ({
-        productId: parseInt(item.productId, 10),
+        productId: item.productId,
         quantity: item.quantity,
       }));
 

@@ -12,6 +12,7 @@ import {
   FaBox,
 } from 'react-icons/fa';
 import { eventsApi, ordersApi, officersApi, productsApi } from '../../services/api';
+import { useUserAuth } from '../../context';
 import type {
   ApiEvent,
   ApiOrder,
@@ -95,6 +96,7 @@ const PRODUCT_CATEGORY_OPTIONS = [
 export const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useUserAuth();
   const [currentView, setCurrentView] = useState<AdminView>('events');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -113,7 +115,7 @@ export const Dashboard = () => {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState<string | null>(null);
-  const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   // Officers state
   const [officers, setOfficers] = useState<ApiOfficer[]>([]);
@@ -207,7 +209,8 @@ export const Dashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
+    // Use context's logout to clear user state
+    logout();
     navigate('/admin/login');
   };
 
@@ -323,7 +326,7 @@ export const Dashboard = () => {
   };
 
   // Order handlers
-  const handleOrderStatusChange = async (orderId: number, newStatus: OrderStatus) => {
+  const handleOrderStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     setUpdatingOrderId(orderId);
     try {
       const updatedOrder = await ordersApi.updateOrderStatus(orderId, newStatus);

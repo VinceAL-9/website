@@ -52,7 +52,7 @@ export interface CreateOfficerDto {
   order?: number;
 }
 
-export interface UpdateOfficerDto extends Partial<CreateOfficerDto> {}
+export interface UpdateOfficerDto extends Partial<CreateOfficerDto> { }
 
 // Event interfaces
 export interface ApiEvent {
@@ -74,7 +74,7 @@ export interface CreateEventDto {
   isUpcoming?: boolean;
 }
 
-export interface UpdateEventDto extends Partial<CreateEventDto> {}
+export interface UpdateEventDto extends Partial<CreateEventDto> { }
 
 // Product interfaces
 export interface ApiProduct {
@@ -98,20 +98,26 @@ export interface CreateProductDto {
   isFeatured?: boolean;
 }
 
-export interface UpdateProductDto extends Partial<CreateProductDto> {}
+export interface UpdateProductDto extends Partial<CreateProductDto> { }
 
 // Order interfaces
 export interface ApiOrderItem {
-  id: number;
-  orderId: number;
-  productId: number;
+  id: string;
+  orderId: string;
+  productId: string;
   quantity: number;
   priceAtTime: number | string; // Decimal from DB may come as string
-  product?: ApiProduct;
+  product: {
+    id: string;
+    name: string;
+    category: Category;
+    imageUrl: string;
+  };
 }
 
 export interface ApiOrder {
-  id: number;
+  id: string;
+  referenceId: string;
   customerName: string;
   studentId: string;
   contactNumber: string;
@@ -120,11 +126,11 @@ export interface ApiOrder {
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
-  orderItems?: ApiOrderItem[];
+  orderItems: ApiOrderItem[];
 }
 
 export interface OrderItemDto {
-  productId: number;
+  productId: string;
   quantity: number;
 }
 

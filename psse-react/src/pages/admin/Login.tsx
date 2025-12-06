@@ -1,12 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
-import { authApi } from '../../services/api';
 import { useUserAuth } from '../../context';
 
 export const Login = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useUserAuth();
+  const { user, isLoading: authLoading, login } = useUserAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -30,12 +29,16 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await authApi.login(email, password);
-      localStorage.setItem('access_token', response.access_token);
-      navigate('/admin/dashboard');
+      // Use the context login function which updates user state
+      await login(email, password);
+      // The useEffect above will handle the redirect when user state updates
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || 'Invalid credentials. Please try again.');
+      } else if (typeof err === 'object' && err !== null) {
+        // Handle axios error response
+        const axiosError = err as { response?: { data?: { message?: string } } };
+        setError(axiosError.response?.data?.message || 'Invalid credentials. Please try again.');
       } else {
         setError('Invalid credentials. Please try again.');
       }
@@ -129,19 +132,6 @@ export const Login = () => {
               )}
             </button>
           </form>
-
-          {/* Register Link */}
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
-              Don't have an account?{' '}
-              <Link
-                to="/admin/register"
-                className="text-psse-accent hover:text-blue-600 font-medium transition-colors"
-              >
-                Register here
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>

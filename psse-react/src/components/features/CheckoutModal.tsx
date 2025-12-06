@@ -89,13 +89,13 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
         customerEmail: formData.customerEmail,
         contactNumber: formData.contactNumber,
         items: cart.map((item) => ({
-          productId: parseInt(item.productId),
+          productId: item.productId, // UUID string format
           quantity: item.quantity,
         })),
       };
 
       const response = await ordersApi.createOrder(orderPayload);
-      
+
       // Success - store the order reference ID
       setOrderReferenceId(response.id.toString());
       clearCart();
@@ -103,18 +103,18 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     } catch (error: unknown) {
       // Handle error response
       let message = 'An error occurred while placing your order. Please try again.';
-      
+
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string | string[] } } };
         const responseMessage = axiosError.response?.data?.message;
-        
+
         if (Array.isArray(responseMessage)) {
           message = responseMessage.join(', ');
         } else if (typeof responseMessage === 'string') {
           message = responseMessage;
         }
       }
-      
+
       setErrorMessage(message);
       setStep('error');
     } finally {
@@ -259,7 +259,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
       {/* Customer Information */}
       <div className="space-y-4">
         <h4 className="font-medium text-gray-900">Customer Information</h4>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -336,17 +336,17 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
       <FaCheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
       <h4 className="text-2xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h4>
       <p className="text-gray-600 mb-4">Thank you for your order.</p>
-      
+
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
         <p className="text-sm text-green-700 mb-1">Your Order Reference ID:</p>
         <p className="text-2xl font-bold text-green-800">ORD-{orderReferenceId}</p>
       </div>
-      
+
       <p className="text-sm text-gray-500 mb-6">
         Please save this reference ID. You will receive a confirmation email shortly.
         Payment will be collected upon pickup at the PSSE office.
       </p>
-      
+
       <Button variant="primary" onClick={handleClose}>
         Continue Shopping
       </Button>
@@ -357,11 +357,11 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     <div className="text-center py-8">
       <FaExclamationTriangle className="w-20 h-20 text-red-500 mx-auto mb-6" />
       <h4 className="text-2xl font-bold text-gray-900 mb-2">Order Failed</h4>
-      
+
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
         <p className="text-red-700">{errorMessage}</p>
       </div>
-      
+
       <div className="flex justify-center gap-3">
         <Button variant="ghost" onClick={handleBackToCart}>
           Back to Cart

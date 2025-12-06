@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaBars, FaTimes, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { FaBars, FaTimes, FaSignOutAlt, FaUser, FaShoppingBag } from 'react-icons/fa';
 import { useUserAuth } from '../../context';
 
 interface NavLink {
@@ -65,6 +65,13 @@ export const Navbar = () => {
                   <FaUser className="w-4 h-4" />
                   <span className="text-sm">{user?.name || 'Member'}</span>
                 </div>
+                <Link
+                  to="/user/transactions"
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-psse-accent/20 hover:text-psse-accent transition-all duration-200"
+                >
+                  <FaShoppingBag className="w-4 h-4" />
+                  <span>My Orders</span>
+                </Link>
                 <button
                   onClick={logout}
                   className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200"
@@ -115,6 +122,14 @@ export const Navbar = () => {
                   <FaUser className="w-4 h-4" />
                   <span className="text-sm">{user?.name || 'Member'}</span>
                 </div>
+                <Link
+                  to="/user/transactions"
+                  onClick={closeMenu}
+                  className="flex items-center gap-2 w-full px-4 py-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-psse-accent/20 hover:text-psse-accent transition-all duration-200"
+                >
+                  <FaShoppingBag className="w-4 h-4" />
+                  <span>My Orders</span>
+                </Link>
                 <button
                   onClick={() => {
                     logout();

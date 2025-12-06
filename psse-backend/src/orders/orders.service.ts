@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Generates a human-readable reference ID for orders
@@ -17,13 +17,13 @@ export class OrdersService {
     const timestamp = now.toISOString()
       .replace(/[-:T]/g, '')
       .slice(0, 14); // YYYYMMDDHHmmss
-    
+
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let randomSuffix = '';
     for (let i = 0; i < 4; i++) {
       randomSuffix += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
     }
-    
+
     return `ORD-${timestamp}-${randomSuffix}`;
   }
 
@@ -37,7 +37,7 @@ export class OrdersService {
    * 4. Order and OrderItem records are created
    * 5. If any step fails, the entire transaction rolls back
    */
-  async create(createOrderDto: CreateOrderDto) {
+  async create(createOrderDto: CreateOrderDto, userId?: string) {
     const { customerName, studentId, contactNumber, customerEmail, items } = createOrderDto;
 
     // Generate unique reference ID for this order
@@ -101,6 +101,10 @@ export class OrdersService {
       const order = await tx.order.create({
         data: {
           referenceId,
+          // Connect to user using Prisma relation syntax
+          user: {
+            connect: { id: userId },
+          },
           customerName,
           studentId,
           contactNumber,
@@ -215,6 +219,32 @@ export class OrdersService {
             },
           },
         },
+      },
+    });
+  }
+
+  /**
+   * Retrieves all orders for a specific user (transaction history).
+   */
+  async findByUserId(userId: string) {
+    return this.prisma.order.findMany({
+      where: { user: { id: userId } },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
