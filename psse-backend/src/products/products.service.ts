@@ -27,7 +27,15 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto) {
     return this.prisma.product.create({
-      data: createProductDto,
+      data: {
+        name: createProductDto.name,
+        description: createProductDto.description,
+        price: createProductDto.price,
+        stock: createProductDto.stock,
+        category: createProductDto.category,
+        imageUrl: createProductDto.imageUrl!,
+        isFeatured: createProductDto.isFeatured ?? false,
+      },
     });
   }
 

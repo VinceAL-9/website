@@ -9,17 +9,19 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
+  FaBox,
 } from 'react-icons/fa';
-import { eventsApi, ordersApi, officersApi } from '../../services/api';
+import { eventsApi, ordersApi, officersApi, productsApi } from '../../services/api';
 import type {
   ApiEvent,
   ApiOrder,
   ApiOfficer,
+  ApiProduct,
 } from '../../types';
-import { OrderStatus } from '../../types/api.types';
+import { OrderStatus, Category } from '../../types/api.types';
 import { Modal, Button } from '../../components/common';
 
-type AdminView = 'events' | 'orders' | 'officers';
+type AdminView = 'events' | 'orders' | 'officers' | 'products';
 
 interface EventFormData {
   title: string;
@@ -66,6 +68,30 @@ const OFFICER_CATEGORY_OPTIONS = [
   { value: 'communications', label: 'Communications' },
 ];
 
+interface ProductFormData {
+  name: string;
+  description: string;
+  price: string;
+  stock: string;
+  category: Category;
+  isFeatured: boolean;
+}
+
+const initialProductForm: ProductFormData = {
+  name: '',
+  description: '',
+  price: '',
+  stock: '',
+  category: Category.TSHIRT,
+  isFeatured: false,
+};
+
+const PRODUCT_CATEGORY_OPTIONS = [
+  { value: Category.LANYARD, label: 'Lanyard' },
+  { value: Category.TSHIRT, label: 'T-Shirt' },
+  { value: Category.STICKER, label: 'Sticker' },
+];
+
 export const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -100,6 +126,17 @@ export const Dashboard = () => {
   const [selectedOfficerPhotoFile, setSelectedOfficerPhotoFile] = useState<File | null>(null);
   const [officerPhotoPreview, setOfficerPhotoPreview] = useState<string | null>(null);
 
+  // Products state
+  const [products, setProducts] = useState<ApiProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ApiProduct | null>(null);
+  const [productForm, setProductForm] = useState<ProductFormData>(initialProductForm);
+  const [productSubmitting, setProductSubmitting] = useState(false);
+  const [selectedProductImageFile, setSelectedProductImageFile] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
+
   // Set view based on URL
   useEffect(() => {
     const path = location.pathname;
@@ -107,6 +144,8 @@ export const Dashboard = () => {
       setCurrentView('orders');
     } else if (path.includes('officers')) {
       setCurrentView('officers');
+    } else if (path.includes('products')) {
+      setCurrentView('products');
     } else {
       setCurrentView('events');
     }
@@ -120,6 +159,8 @@ export const Dashboard = () => {
       loadOrders();
     } else if (currentView === 'officers') {
       loadOfficers();
+    } else if (currentView === 'products') {
+      loadProducts();
     }
   }, [currentView]);
 
@@ -390,6 +431,116 @@ export const Dashboard = () => {
     }
   };
 
+  // Product handlers
+  const loadProducts = async () => {
+    setProductsLoading(true);
+    setProductsError(null);
+    try {
+      const data = await productsApi.getProducts();
+      setProducts(data);
+    } catch (err) {
+      setProductsError('Failed to load products. Please try again.');
+      console.error('Error loading products:', err);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const openAddProductModal = () => {
+    setEditingProduct(null);
+    setProductForm(initialProductForm);
+    setSelectedProductImageFile(null);
+    setProductImagePreview(null);
+    setShowProductModal(true);
+  };
+
+  const openEditProductModal = (product: ApiProduct) => {
+    setEditingProduct(product);
+    setProductForm({
+      name: product.name,
+      description: product.description,
+      price: String(product.price),
+      stock: String(product.stock),
+      category: product.category,
+      isFeatured: product.isFeatured,
+    });
+    setSelectedProductImageFile(null);
+    setProductImagePreview(product.imageUrl);
+    setShowProductModal(true);
+  };
+
+  const closeProductModal = () => {
+    setShowProductModal(false);
+    setEditingProduct(null);
+    setProductForm(initialProductForm);
+    setSelectedProductImageFile(null);
+    setProductImagePreview(null);
+  };
+
+  const handleProductFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setProductForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
+
+  const handleProductSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setProductSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('name', productForm.name);
+      formData.append('description', productForm.description);
+      formData.append('price', productForm.price);
+      formData.append('stock', productForm.stock);
+      formData.append('category', productForm.category);
+      formData.append('isFeatured', productForm.isFeatured.toString());
+
+      if (selectedProductImageFile) {
+        formData.append('image', selectedProductImageFile);
+      }
+
+      if (editingProduct) {
+        await productsApi.updateProduct(editingProduct.id, formData);
+      } else {
+        if (!selectedProductImageFile) {
+          alert('Please select an image for the product.');
+          setProductSubmitting(false);
+          return;
+        }
+        await productsApi.createProduct(formData);
+      }
+
+      closeProductModal();
+      loadProducts();
+    } catch (err) {
+      console.error('Error saving product:', err);
+      alert('Failed to save product. Please try again.');
+    } finally {
+      setProductSubmitting(false);
+    }
+  };
+
+  const handleDeleteProduct = async (product: ApiProduct) => {
+    if (!window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
+      return;
+    }
+
+    try {
+      await productsApi.deleteProduct(product.id);
+      loadProducts();
+    } catch (err: any) {
+      console.error('Error deleting product:', err);
+      if (err.response?.status !== 401) {
+        alert(`Failed to delete product: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+      }
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -408,6 +559,7 @@ export const Dashboard = () => {
     { id: 'events' as AdminView, label: 'Manage Events', icon: FaCalendarAlt },
     { id: 'orders' as AdminView, label: 'View Orders', icon: FaShoppingCart },
     { id: 'officers' as AdminView, label: 'Update Officers', icon: FaUsers },
+    { id: 'products' as AdminView, label: 'Manage Products', icon: FaBox },
   ];
 
   return (
@@ -801,6 +953,138 @@ export const Dashboard = () => {
             )}
           </div>
         )}
+
+        {/* Products View */}
+        {currentView === 'products' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Manage Products</h2>
+              <Button onClick={openAddProductModal}>
+                <FaPlus className="mr-2" />
+                Add Product
+              </Button>
+            </div>
+
+            {productsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <FaSpinner className="animate-spin text-3xl text-psse-accent" />
+              </div>
+            ) : productsError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
+                {productsError}
+                <button onClick={loadProducts} className="ml-2 underline">
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Stock
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Featured
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {products.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                          No products found. Click "Add Product" to create one.
+                        </td>
+                      </tr>
+                    ) : (
+                      products.map((product) => (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              {product.imageUrl && (
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  className="w-12 h-12 rounded-lg object-cover mr-3"
+                                />
+                              )}
+                              <div>
+                                <div className="font-medium text-gray-900">
+                                  {product.name}
+                                </div>
+                                <div className="text-sm text-gray-500 truncate max-w-xs">
+                                  {product.description}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {product.category}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {formatCurrency(product.price)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${Number(product.stock) > 10
+                                ? 'bg-green-100 text-green-800'
+                                : Number(product.stock) > 0
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                                }`}
+                            >
+                              {product.stock} in stock
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${product.isFeatured
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-gray-100 text-gray-600'
+                                }`}
+                            >
+                              {product.isFeatured ? 'Featured' : 'Not Featured'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right space-x-2">
+                            <button
+                              onClick={() => openEditProductModal(product)}
+                              className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <FaEdit className="mr-1" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product)}
+                              className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                            >
+                              <FaTrash className="mr-1" />
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Event Modal */}
@@ -1140,6 +1424,212 @@ export const Dashboard = () => {
                 'Update Officer'
               ) : (
                 'Create Officer'
+              )}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Product Modal */}
+      <Modal
+        isOpen={showProductModal}
+        onClose={closeProductModal}
+        title={editingProduct ? 'Edit Product' : 'Add New Product'}
+        size="lg"
+      >
+        <form onSubmit={handleProductSubmit} className="space-y-4">
+          {/* Name */}
+          <div>
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Product Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={productForm.name}
+              onChange={handleProductFormChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              placeholder="Enter product name"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={productForm.description}
+              onChange={handleProductFormChange}
+              required
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              placeholder="Enter product description"
+            />
+          </div>
+
+          {/* Price and Stock */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="price"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Price (₱)
+              </label>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={productForm.price}
+                onChange={handleProductFormChange}
+                required
+                min="0"
+                step="0.01"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="stock"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Stock
+              </label>
+              <input
+                type="number"
+                id="stock"
+                name="stock"
+                value={productForm.stock}
+                onChange={handleProductFormChange}
+                required
+                min="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label
+              htmlFor="category"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              value={productForm.category}
+              onChange={handleProductFormChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+            >
+              {PRODUCT_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Featured */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isFeatured"
+              name="isFeatured"
+              checked={productForm.isFeatured}
+              onChange={handleProductFormChange}
+              className="w-4 h-4 text-psse-accent border-gray-300 rounded focus:ring-psse-accent"
+            />
+            <label
+              htmlFor="isFeatured"
+              className="text-sm font-medium text-gray-700"
+            >
+              Featured Product
+            </label>
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label
+              htmlFor="productImage"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Product Image {!editingProduct && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type="file"
+              id="productImage"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedProductImageFile(file);
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setProductImagePreview(reader.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                } else {
+                  setSelectedProductImageFile(null);
+                  setProductImagePreview(editingProduct?.imageUrl || null);
+                }
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-psse-accent file:text-white hover:file:bg-psse-accent/90"
+            />
+            {editingProduct && !selectedProductImageFile && (
+              <p className="mt-2 text-sm text-gray-500">
+                Leave empty to keep existing image
+              </p>
+            )}
+            {productImagePreview && (
+              <div className="mt-4 flex flex-col items-center gap-2">
+                <span className="text-sm font-medium text-gray-600">
+                  {selectedProductImageFile ? 'New Image Preview' : 'Current Image'}
+                </span>
+                <img
+                  src={productImagePreview}
+                  alt="Product preview"
+                  className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={closeProductModal}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={productSubmitting}
+            >
+              Cancel
+            </button>
+            <Button type="submit" disabled={productSubmitting}>
+              {productSubmitting ? (
+                <>
+                  <FaSpinner className="animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : editingProduct ? (
+                'Update Product'
+              ) : (
+                'Create Product'
               )}
             </Button>
           </div>

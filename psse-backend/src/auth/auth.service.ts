@@ -1,6 +1,7 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma';
 import { JwtPayload } from './interfaces';
 import { RegisterDto } from './dto';
@@ -71,7 +72,8 @@ export class AuthService {
 
   /**
    * Registers a new user.
-   * Checks if user exists, hashes password, and creates user with MEMBER role.
+   * Checks if user exists, hashes password, creates user with MEMBER role,
+   * and generates a verification token for email verification.
    */
   async register(dto: RegisterDto) {
     // Check if user already exists
@@ -87,7 +89,10 @@ export class AuthService {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
 
-    // Create the user with MEMBER role
+    // Generate a random verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    // Create the user with MEMBER role and verification token
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
@@ -95,6 +100,8 @@ export class AuthService {
         name: dto.name,
         studentId: dto.studentId,
         role: 'MEMBER',
+        isVerified: false,
+        verificationToken,
       },
       select: {
         id: true,
@@ -102,11 +109,38 @@ export class AuthService {
         name: true,
         studentId: true,
         role: true,
+        isVerified: true,
         createdAt: true,
-        // Exclude password from response
+        // Exclude password and verificationToken from response
       },
     });
 
     return user;
+  }
+
+  /**
+   * Verifies a user's email using the verification token.
+   * Marks the user as verified and clears the token.
+   */
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    // Find user by verification token
+    const user = await this.prisma.user.findFirst({
+      where: { verificationToken: token },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Invalid or expired verification token');
+    }
+
+    // Update user: set isVerified to true and clear the token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+      },
+    });
+
+    return { message: 'Email verified successfully' };
   }
 }

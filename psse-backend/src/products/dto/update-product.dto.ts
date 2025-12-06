@@ -1,5 +1,5 @@
 import { IsString, IsNumber, IsInt, IsEnum, IsBoolean, IsOptional, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { Category } from '@prisma/client';
 
 export class UpdateProductDto {
@@ -19,6 +19,7 @@ export class UpdateProductDto {
 
   @IsInt()
   @Min(0)
+  @Type(() => Number)
   @IsOptional()
   stock?: number;
 
@@ -28,9 +29,19 @@ export class UpdateProductDto {
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => {
+    // Transform empty string to undefined so validation passes
+    if (value === '' || value === null || value === undefined) return undefined;
+    return value;
+  })
   imageUrl?: string;
 
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   isFeatured?: boolean;
 }

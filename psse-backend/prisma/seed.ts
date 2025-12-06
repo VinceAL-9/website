@@ -1,4 +1,4 @@
-import { PrismaClient, Role, Category } from '@prisma/client';
+import { PrismaClient, Role, Category, OfficerCategory } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
@@ -36,37 +36,37 @@ async function main() {
   console.log('👥 Seeding officers...');
   const officers = [
     // Executive Board (5 positions)
-    { name: 'Juan Dela Cruz', position: 'President', category: 'Executive Board', photoUrl: '/images/officers/president.jpg', academicYear: '2024-2025', order: 1 },
-    { name: 'Maria Santos', position: 'VP External', category: 'Executive Board', photoUrl: '/images/officers/vp-external.jpg', academicYear: '2024-2025', order: 2 },
-    { name: 'Pedro Reyes', position: 'VP Internal', category: 'Executive Board', photoUrl: '/images/officers/vp-internal.jpg', academicYear: '2024-2025', order: 3 },
-    { name: 'Ana Garcia', position: 'VP Media', category: 'Executive Board', photoUrl: '/images/officers/vp-media.jpg', academicYear: '2024-2025', order: 4 },
-    { name: 'Jose Rizal', position: 'VP Tech', category: 'Executive Board', photoUrl: '/images/officers/vp-tech.jpg', academicYear: '2024-2025', order: 5 },
+    { name: 'Juan Dela Cruz', position: 'President', category: OfficerCategory.EXEC, photoUrl: '/images/officers/president.jpg', academicYear: '2024-2025', order: 1 },
+    { name: 'Maria Santos', position: 'VP External', category: OfficerCategory.EXEC, photoUrl: '/images/officers/vp-external.jpg', academicYear: '2024-2025', order: 2 },
+    { name: 'Pedro Reyes', position: 'VP Internal', category: OfficerCategory.EXEC, photoUrl: '/images/officers/vp-internal.jpg', academicYear: '2024-2025', order: 3 },
+    { name: 'Ana Garcia', position: 'VP Media', category: OfficerCategory.EXEC, photoUrl: '/images/officers/vp-media.jpg', academicYear: '2024-2025', order: 4 },
+    { name: 'Jose Rizal', position: 'VP Tech', category: OfficerCategory.EXEC, photoUrl: '/images/officers/vp-tech.jpg', academicYear: '2024-2025', order: 5 },
 
     // Administrative & Finance (8 positions)
-    { name: 'Carmen Luna', position: 'Secretary', category: 'Administrative & Finance', photoUrl: '/images/officers/secretary.jpg', academicYear: '2024-2025', order: 6 },
-    { name: 'Miguel Torres', position: 'Asst. Secretary', category: 'Administrative & Finance', photoUrl: '/images/officers/asst-secretary.jpg', academicYear: '2024-2025', order: 7 },
-    { name: 'Rosa Flores', position: 'Auditor', category: 'Administrative & Finance', photoUrl: '/images/officers/auditor.jpg', academicYear: '2024-2025', order: 8 },
-    { name: 'Carlos Mendoza', position: 'Asst. Auditor', category: 'Administrative & Finance', photoUrl: '/images/officers/asst-auditor.jpg', academicYear: '2024-2025', order: 9 },
-    { name: 'Isabella Cruz', position: 'Business Manager', category: 'Administrative & Finance', photoUrl: '/images/officers/business-manager.jpg', academicYear: '2024-2025', order: 10 },
-    { name: 'Fernando Aquino', position: 'Asst. Business Manager', category: 'Administrative & Finance', photoUrl: '/images/officers/asst-business-manager.jpg', academicYear: '2024-2025', order: 11 },
-    { name: 'Lucia Bautista', position: 'General Treasurer', category: 'Administrative & Finance', photoUrl: '/images/officers/general-treasurer.jpg', academicYear: '2024-2025', order: 12 },
-    { name: 'Antonio Ramos', position: 'PIO', category: 'Administrative & Finance', photoUrl: '/images/officers/pio.jpg', academicYear: '2024-2025', order: 13 },
+    { name: 'Carmen Luna', position: 'Secretary', category: OfficerCategory.ADMIN, photoUrl: '/images/officers/secretary.jpg', academicYear: '2024-2025', order: 6 },
+    { name: 'Miguel Torres', position: 'Asst. Secretary', category: OfficerCategory.ADMIN, photoUrl: '/images/officers/asst-secretary.jpg', academicYear: '2024-2025', order: 7 },
+    { name: 'Rosa Flores', position: 'Auditor', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/auditor.jpg', academicYear: '2024-2025', order: 8 },
+    { name: 'Carlos Mendoza', position: 'Asst. Auditor', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/asst-auditor.jpg', academicYear: '2024-2025', order: 9 },
+    { name: 'Isabella Cruz', position: 'Business Manager', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/business-manager.jpg', academicYear: '2024-2025', order: 10 },
+    { name: 'Fernando Aquino', position: 'Asst. Business Manager', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/asst-business-manager.jpg', academicYear: '2024-2025', order: 11 },
+    { name: 'Lucia Bautista', position: 'General Treasurer', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/general-treasurer.jpg', academicYear: '2024-2025', order: 12 },
+    { name: 'Antonio Ramos', position: 'PIO', category: OfficerCategory.ADMIN, photoUrl: '/images/officers/pio.jpg', academicYear: '2024-2025', order: 13 },
 
     // Representatives (4 positions)
-    { name: 'Patricia Villanueva', position: '1st Year Representative', category: 'Representatives', photoUrl: '/images/officers/1st-year-rep.jpg', academicYear: '2024-2025', order: 14 },
-    { name: 'Roberto Fernandez', position: '2nd Year Representative', category: 'Representatives', photoUrl: '/images/officers/2nd-year-rep.jpg', academicYear: '2024-2025', order: 15 },
-    { name: 'Elena Gonzales', position: '3rd Year Representative', category: 'Representatives', photoUrl: '/images/officers/3rd-year-rep.jpg', academicYear: '2024-2025', order: 16 },
-    { name: 'Marco Dela Rosa', position: '4th Year Representative', category: 'Representatives', photoUrl: '/images/officers/4th-year-rep.jpg', academicYear: '2024-2025', order: 17 },
+    { name: 'Patricia Villanueva', position: '1st Year Representative', category: OfficerCategory.REP, photoUrl: '/images/officers/1st-year-rep.jpg', academicYear: '2024-2025', order: 14 },
+    { name: 'Roberto Fernandez', position: '2nd Year Representative', category: OfficerCategory.REP, photoUrl: '/images/officers/2nd-year-rep.jpg', academicYear: '2024-2025', order: 15 },
+    { name: 'Elena Gonzales', position: '3rd Year Representative', category: OfficerCategory.REP, photoUrl: '/images/officers/3rd-year-rep.jpg', academicYear: '2024-2025', order: 16 },
+    { name: 'Marco Dela Rosa', position: '4th Year Representative', category: OfficerCategory.REP, photoUrl: '/images/officers/4th-year-rep.jpg', academicYear: '2024-2025', order: 17 },
 
     // Year Level Treasurers (4 positions)
-    { name: 'Sofia Castillo', position: '1st Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/1st-year-treasurer.jpg', academicYear: '2024-2025', order: 18 },
-    { name: 'Daniel Aguilar', position: '2nd Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/2nd-year-treasurer.jpg', academicYear: '2024-2025', order: 19 },
-    { name: 'Andrea Lim', position: '3rd Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/3rd-year-treasurer.jpg', academicYear: '2024-2025', order: 20 },
-    { name: 'Gabriel Santos', position: '4th Year Treasurer', category: 'Year Level Treasurers', photoUrl: '/images/officers/4th-year-treasurer.jpg', academicYear: '2024-2025', order: 21 },
+    { name: 'Sofia Castillo', position: '1st Year Treasurer', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/1st-year-treasurer.jpg', academicYear: '2024-2025', order: 18 },
+    { name: 'Daniel Aguilar', position: '2nd Year Treasurer', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/2nd-year-treasurer.jpg', academicYear: '2024-2025', order: 19 },
+    { name: 'Andrea Lim', position: '3rd Year Treasurer', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/3rd-year-treasurer.jpg', academicYear: '2024-2025', order: 20 },
+    { name: 'Gabriel Santos', position: '4th Year Treasurer', category: OfficerCategory.FINANCE, photoUrl: '/images/officers/4th-year-treasurer.jpg', academicYear: '2024-2025', order: 21 },
 
     // Ambassadors (2 positions)
-    { name: 'Victoria Tan', position: 'Ambassador', category: 'Ambassadors', photoUrl: '/images/officers/ambassador.jpg', academicYear: '2024-2025', order: 22 },
-    { name: 'Rafael Morales', position: 'Ambassadress', category: 'Ambassadors', photoUrl: '/images/officers/ambassadress.jpg', academicYear: '2024-2025', order: 23 },
+    { name: 'Victoria Tan', position: 'Ambassador', category: OfficerCategory.AMBASSADOR, photoUrl: '/images/officers/ambassador.jpg', academicYear: '2024-2025', order: 22 },
+    { name: 'Rafael Morales', position: 'Ambassadress', category: OfficerCategory.AMBASSADOR, photoUrl: '/images/officers/ambassadress.jpg', academicYear: '2024-2025', order: 23 },
   ];
 
   for (const officer of officers) {

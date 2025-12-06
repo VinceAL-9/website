@@ -2,21 +2,27 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
 import { authApi } from '../../services/api';
+import { useUserAuth } from '../../context';
 
 export const Login = () => {
   const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useUserAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect to dashboard if already logged in
+  // Redirect based on user role if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      navigate('/admin/dashboard', { replace: true });
+    if (!authLoading && user) {
+      if (user.role === 'ADMIN') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        // Non-admin users should not access admin login
+        navigate('/', { replace: true });
+      }
     }
-  }, [navigate]);
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

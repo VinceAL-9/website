@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { FaSpinner, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaSpinner, FaCalendarAlt, FaMapMarkerAlt, FaCheckCircle } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
 import { Button, Modal, Badge } from '../components/common';
 import { EventCard } from '../components/features';
 import { eventsApi } from '../services/api';
 import { useScrollAnimationList } from '../hooks';
+import { useUserAuth } from '../context';
 import type { ApiEvent, Event, BadgeVariant } from '../types';
 
 /**
@@ -55,6 +57,8 @@ export const Events = () => {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { user, isAuthenticated } = useUserAuth();
 
   const { containerRef: eventsRef, visibleItems: visibleEvents } = useScrollAnimationList(
     pastEvents.length,
@@ -275,6 +279,37 @@ export const Events = () => {
           <p className="text-gray-600">
             We look forward to seeing you actively contribute and grow with the PSSE community!
           </p>
+
+          {/* Member Login/Register Buttons - Only show when not logged in */}
+          {isAuthenticated ? (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-center gap-2 text-green-600">
+                <FaCheckCircle className="w-5 h-5" />
+                <span className="font-medium">Welcome back, {user?.name || 'Member'}!</span>
+              </div>
+              <p className="text-sm text-gray-600 mt-2 text-center">
+                You're already logged in and can access all member features.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-4 text-center">
+                Create an account to access exclusive member features like merchandise purchasing.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link to="/user/login" className="flex-1" onClick={() => setIsJoinModalOpen(false)}>
+                  <Button variant="primary" className="w-full">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/user/register" className="flex-1" onClick={() => setIsJoinModalOpen(false)}>
+                  <Button variant="primary" className="w-full">
+                    Register
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
     </PageLayout>

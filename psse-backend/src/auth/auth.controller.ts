@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Get,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -56,5 +57,16 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   getProfile(@CurrentUser() user: any) {
     return user;
+  }
+
+  /**
+   * GET /auth/verify?token=xxx
+   * Verifies the user's email using the provided token.
+   * This endpoint is public (no authentication required).
+   */
+  @Get('verify')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
   }
 }

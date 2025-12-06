@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaUser, FaIdCard, FaEnvelope, FaLock, FaSpinner, FaCheckCircle } from 'react-icons/fa';
 import { authApi } from '../../services/api';
+import { useUserAuth } from '../../context';
 
 interface RegisterFormData {
     name: string;
@@ -13,6 +14,7 @@ interface RegisterFormData {
 
 export const Register = () => {
     const navigate = useNavigate();
+    const { user, isLoading: authLoading } = useUserAuth();
     const [formData, setFormData] = useState<RegisterFormData>({
         name: '',
         studentId: '',
@@ -24,13 +26,17 @@ export const Register = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    // Redirect to dashboard if already logged in
+    // Redirect based on user role if already logged in
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            navigate('/admin/dashboard', { replace: true });
+        if (!authLoading && user) {
+            if (user.role === 'ADMIN') {
+                navigate('/admin/dashboard', { replace: true });
+            } else {
+                // Non-admin users should not access admin register
+                navigate('/', { replace: true });
+            }
         }
-    }, [navigate]);
+    }, [user, authLoading, navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;

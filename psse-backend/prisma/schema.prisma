@@ -8,25 +8,27 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
-  role      Role     @default(MEMBER)
-  studentId String?
-  createdAt DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  password          String
+  name              String?
+  role              Role     @default(MEMBER)
+  studentId         String?
+  createdAt         DateTime @default(now())
+  isVerified        Boolean  @default(false)
+  verificationToken String?
 
   @@map("users")
 }
 
 model Officer {
-  id           Int    @id @default(autoincrement())
+  id           Int             @id @default(autoincrement())
   name         String
   position     String
-  category     String
+  category     OfficerCategory
   photoUrl     String
   academicYear String
-  order        Int    @default(0)
+  order        Int             @default(0)
 
   @@map("officers")
 }
@@ -87,6 +89,14 @@ model OrderItem {
 enum Role {
   MEMBER
   ADMIN
+}
+
+enum OfficerCategory {
+  EXEC
+  ADMIN
+  REP
+  FINANCE
+  AMBASSADOR
 }
 
 enum Category {

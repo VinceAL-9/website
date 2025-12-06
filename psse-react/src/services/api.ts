@@ -198,6 +198,39 @@ export const productsApi = {
     });
     return response.data;
   },
+
+  /**
+   * Create a new product (Admin)
+   * Accepts FormData for file upload
+   */
+  createProduct: async (data: FormData): Promise<ApiProduct> => {
+    const response = await axiosInstance.post<ApiProduct>('/products', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Update a product (Admin)
+   * Accepts FormData for file upload
+   */
+  updateProduct: async (id: number, data: FormData): Promise<ApiProduct> => {
+    const response = await axiosInstance.patch<ApiProduct>(`/products/${id}`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Delete a product (Admin)
+   */
+  deleteProduct: async (id: number): Promise<void> => {
+    await axiosInstance.delete(`/products/${id}`);
+  },
 };
 
 /**

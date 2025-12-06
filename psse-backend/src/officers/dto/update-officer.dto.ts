@@ -1,4 +1,5 @@
-import { IsString, IsInt, IsOptional, Min } from 'class-validator';
+import { IsString, IsInt, IsOptional, Min, IsEnum } from 'class-validator';
+import { OfficerCategory } from '@prisma/client';
 
 export class UpdateOfficerDto {
   @IsString()
@@ -9,9 +10,9 @@ export class UpdateOfficerDto {
   @IsOptional()
   position?: string;
 
-  @IsString()
+  @IsEnum(OfficerCategory)
   @IsOptional()
-  category?: string;
+  category?: OfficerCategory;
 
   @IsString()
   @IsOptional()

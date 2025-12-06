@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { FaBars, FaTimes, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { useUserAuth } from '../../context';
 
 interface NavLink {
   path: string;
@@ -17,6 +18,7 @@ const navLinks: NavLink[] = [
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useUserAuth();
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
@@ -47,15 +49,32 @@ export const Navbar = () => {
                 key={link.path}
                 to={link.path}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                  ${
-                    isActive(link.path)
-                      ? 'bg-psse-accent/20 text-psse-accent'
-                      : 'text-gray-300 hover:bg-psse-light/30 hover:text-white'
+                  ${isActive(link.path)
+                    ? 'bg-psse-accent/20 text-psse-accent'
+                    : 'text-gray-300 hover:bg-psse-light/30 hover:text-white'
                   }`}
               >
                 {link.label}
               </Link>
             ))}
+
+            {/* User Info & Logout */}
+            {isAuthenticated && (
+              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-psse-light/30">
+                <div className="flex items-center gap-2 text-gray-300">
+                  <FaUser className="w-4 h-4" />
+                  <span className="text-sm">{user?.name || 'Member'}</span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200"
+                  aria-label="Logout"
+                >
+                  <FaSignOutAlt className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -71,7 +90,7 @@ export const Navbar = () => {
         {/* Mobile Navigation */}
         <div
           className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out
-            ${isOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}
+            ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="py-3 space-y-1">
             {navLinks.map((link) => (
@@ -80,15 +99,34 @@ export const Navbar = () => {
                 to={link.path}
                 onClick={closeMenu}
                 className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
-                  ${
-                    isActive(link.path)
-                      ? 'bg-psse-accent/20 text-psse-accent'
-                      : 'text-gray-300 hover:bg-psse-light/30 hover:text-white'
+                  ${isActive(link.path)
+                    ? 'bg-psse-accent/20 text-psse-accent'
+                    : 'text-gray-300 hover:bg-psse-light/30 hover:text-white'
                   }`}
               >
                 {link.label}
               </Link>
             ))}
+
+            {/* Mobile User Info & Logout */}
+            {isAuthenticated && (
+              <div className="pt-3 mt-3 border-t border-psse-light/30">
+                <div className="flex items-center gap-2 px-4 py-2 text-gray-300">
+                  <FaUser className="w-4 h-4" />
+                  <span className="text-sm">{user?.name || 'Member'}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    logout();
+                    closeMenu();
+                  }}
+                  className="flex items-center gap-2 w-full px-4 py-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200"
+                >
+                  <FaSignOutAlt className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
