@@ -1,7 +1,7 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { Order, OrderFormData, OrderStatus, PaymentStatus, Product } from '../types';
-import { merchandise, getProductById } from '../data/merchandise';
+import type { Product, OrderStatus, PaymentStatus, ApiOrder, CreateOrderDto, ApiProduct, Category } from '../types';
+import { ordersApi, productsApi } from '../services/api';
 
 // Cart Item type
 export interface CartItem {
@@ -9,40 +9,50 @@ export interface CartItem {
   quantity: number;
 }
 
-// Order Actions
-type OrderAction =
-  | { type: 'ADD_ORDER'; payload: Order }
-  | { type: 'UPDATE_STATUS'; payload: { orderId: string; status: OrderStatus } }
-  | { type: 'UPDATE_PAYMENT'; payload: { orderId: string; paymentStatus: PaymentStatus; method?: string; reference?: string } }
-  | { type: 'CANCEL_ORDER'; payload: string }
-  | { type: 'LOAD_ORDERS'; payload: Order[] }
-  | { type: 'UPDATE_STOCK'; payload: { productId: string; quantity: number } }
+// Form data for order submission (client-side)
+export interface OrderFormData {
+  customerName: string;
+  studentId: string;
+  contactNumber: string;
+  customerEmail: string;
+}
+
+// Cart Actions - only cart-related actions remain
+type CartAction =
   | { type: 'ADD_TO_CART'; payload: CartItem }
   | { type: 'REMOVE_FROM_CART'; payload: string }
   | { type: 'UPDATE_CART_QUANTITY'; payload: { productId: string; quantity: number } }
-  | { type: 'CLEAR_CART' };
+  | { type: 'CLEAR_CART' }
+  | { type: 'SET_PRODUCTS'; payload: Product[] };
 
-// State
-interface OrderState {
-  orders: Order[];
+// State - simplified to only cart and products
+interface CartState {
   products: Product[];
-  lastOrderId: number;
   cart: CartItem[];
 }
 
-// Context Type
+// Context Type - updated to reflect API-based order management
 interface OrderContextType {
-  orders: Order[];
+  // Products & Cart
   products: Product[];
   cart: CartItem[];
-  addOrder: (formData: OrderFormData) => Order | null;
-  cancelOrder: (orderId: string) => boolean;
-  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
-  processPayment: (orderId: string, method: string, reference?: string) => void;
-  getOrderById: (orderId: string) => Order | undefined;
+  isLoadingProducts: boolean;
+  productsError: string | null;
+
+  // Order Submission
+  submitOrder: (formData: OrderFormData) => Promise<ApiOrder>;
+  isSubmitting: boolean;
+  submitError: string | null;
+  clearSubmitError: () => void;
+
+  // Product helpers
   getProductById: (productId: string) => Product | undefined;
+
+  // Status display helpers
   getStatusDisplayText: (status: OrderStatus) => string;
   getPaymentStatusDisplayText: (status: PaymentStatus) => string;
+
+  // Cart operations
   addToCart: (productId: string, quantity: number) => boolean;
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => boolean;
@@ -51,86 +61,43 @@ interface OrderContextType {
   getCartItemCount: () => number;
 }
 
-// Initial State
-const getInitialState = (): OrderState => {
-  const savedOrders = localStorage.getItem('psseOrders');
-  const savedLastId = localStorage.getItem('psseLastOrderId');
+// Map API Category enum to local category type
+const categoryMap: Record<Category, 'lanyard' | 'tshirt'> = {
+  LANYARD: 'lanyard',
+  TSHIRT: 'tshirt',
+  STICKER: 'tshirt', // fallback for stickers
+};
+
+// Transform API product to local Product type
+const transformApiProduct = (apiProduct: ApiProduct): Product => ({
+  id: apiProduct.id.toString(),
+  name: apiProduct.name,
+  description: apiProduct.description,
+  price: typeof apiProduct.price === 'string' ? parseFloat(apiProduct.price) : apiProduct.price,
+  image: apiProduct.imageUrl,
+  category: categoryMap[apiProduct.category] || 'tshirt',
+  stock: apiProduct.stock,
+  addedDate: new Date().toISOString(),
+  featured: apiProduct.isFeatured,
+  specifications: [],
+});
+
+// Initial State - only cart persisted
+const getInitialState = (): CartState => {
   const savedCart = localStorage.getItem('psseCart');
-  
+
   return {
-    orders: savedOrders ? JSON.parse(savedOrders) : [],
-    products: [...merchandise],
-    lastOrderId: savedLastId ? parseInt(savedLastId) : 1000,
+    products: [],
     cart: savedCart ? JSON.parse(savedCart) : [],
   };
 };
 
-// Reducer
-const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
+// Reducer - only handles cart actions
+const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
-    case 'ADD_ORDER':
-      return {
-        ...state,
-        orders: [action.payload, ...state.orders],
-        lastOrderId: state.lastOrderId + 1,
-      };
-    
-    case 'UPDATE_STATUS': {
-      const updatedOrders = state.orders.map((order) =>
-        order.id === action.payload.orderId
-          ? { ...order, status: action.payload.status, updatedAt: new Date().toISOString() }
-          : order
-      );
-      return { ...state, orders: updatedOrders };
-    }
-    
-    case 'UPDATE_PAYMENT': {
-      const updatedOrders = state.orders.map((order) =>
-        order.id === action.payload.orderId
-          ? {
-              ...order,
-              paymentStatus: action.payload.paymentStatus,
-              paymentMethod: action.payload.method || order.paymentMethod,
-              paymentReference: action.payload.reference || order.paymentReference,
-              updatedAt: new Date().toISOString(),
-            }
-          : order
-      );
-      return { ...state, orders: updatedOrders };
-    }
-    
-    case 'CANCEL_ORDER': {
-      const order = state.orders.find((o) => o.id === action.payload);
-      if (!order) return state;
-      
-      // Restore stock
-      const updatedProducts = state.products.map((product) =>
-        product.id === order.itemId
-          ? { ...product, stock: product.stock + order.quantity }
-          : product
-      );
-      
-      const updatedOrders = state.orders.map((o) =>
-        o.id === action.payload
-          ? { ...o, status: 'cancelled' as OrderStatus, updatedAt: new Date().toISOString() }
-          : o
-      );
-      
-      return { ...state, orders: updatedOrders, products: updatedProducts };
-    }
-    
-    case 'UPDATE_STOCK': {
-      const updatedProducts = state.products.map((product) =>
-        product.id === action.payload.productId
-          ? { ...product, stock: product.stock - action.payload.quantity }
-          : product
-      );
-      return { ...state, products: updatedProducts };
-    }
-    
-    case 'LOAD_ORDERS':
-      return { ...state, orders: action.payload };
-    
+    case 'SET_PRODUCTS':
+      return { ...state, products: action.payload };
+
     case 'ADD_TO_CART': {
       const existingItem = state.cart.find((item) => item.productId === action.payload.productId);
       if (existingItem) {
@@ -143,10 +110,10 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
       }
       return { ...state, cart: [...state.cart, action.payload] };
     }
-    
+
     case 'REMOVE_FROM_CART':
       return { ...state, cart: state.cart.filter((item) => item.productId !== action.payload) };
-    
+
     case 'UPDATE_CART_QUANTITY': {
       const updatedCart = state.cart.map((item) =>
         item.productId === action.payload.productId
@@ -155,10 +122,10 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
       );
       return { ...state, cart: updatedCart };
     }
-    
+
     case 'CLEAR_CART':
       return { ...state, cart: [] };
-    
+
     default:
       return state;
   }
@@ -173,94 +140,105 @@ interface OrderProviderProps {
 }
 
 export const OrderProvider = ({ children }: OrderProviderProps) => {
-  const [state, dispatch] = useReducer(orderReducer, getInitialState());
+  const [state, dispatch] = useReducer(cartReducer, getInitialState());
 
-  // Persist to localStorage
+  // Products loading state
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
+
+  // API request state for orders
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Fetch products from API on mount
   useEffect(() => {
-    localStorage.setItem('psseOrders', JSON.stringify(state.orders));
-    localStorage.setItem('psseLastOrderId', state.lastOrderId.toString());
-    localStorage.setItem('psseCart', JSON.stringify(state.cart));
-  }, [state.orders, state.lastOrderId, state.cart]);
+    const fetchProducts = async () => {
+      setIsLoadingProducts(true);
+      setProductsError(null);
 
-  // Generate Order ID
-  const generateOrderId = () => `ORD-${state.lastOrderId + 1}`;
-
-  // Calculate estimated pickup (3-5 days)
-  const calculateEstimatedPickup = () => {
-    const today = new Date();
-    const pickupDate = new Date(today);
-    pickupDate.setDate(today.getDate() + Math.floor(Math.random() * 3) + 3);
-    return pickupDate.toISOString();
-  };
-
-  // Add Order
-  const addOrder = (formData: OrderFormData): Order | null => {
-    const product = state.products.find((p) => p.id === formData.itemId);
-    if (!product || product.stock < formData.quantity) {
-      return null;
-    }
-
-    const newOrder: Order = {
-      id: generateOrderId(),
-      ...formData,
-      totalAmount: product.price * formData.quantity,
-      status: 'pending_review',
-      paymentStatus: 'pending',
-      paymentMethod: null,
-      paymentReference: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      estimatedPickup: calculateEstimatedPickup(),
+      try {
+        const apiProducts = await productsApi.getProducts();
+        const transformedProducts = apiProducts.map(transformApiProduct);
+        dispatch({ type: 'SET_PRODUCTS', payload: transformedProducts });
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+        setProductsError('Failed to load products. Please try again later.');
+      } finally {
+        setIsLoadingProducts(false);
+      }
     };
 
-    dispatch({ type: 'UPDATE_STOCK', payload: { productId: formData.itemId, quantity: formData.quantity } });
-    dispatch({ type: 'ADD_ORDER', payload: newOrder });
+    fetchProducts();
+  }, []);
 
-    return newOrder;
-  };
+  // Persist cart to localStorage
+  useEffect(() => {
+    localStorage.setItem('psseCart', JSON.stringify(state.cart));
+  }, [state.cart]);
 
-  // Cancel Order
-  const cancelOrder = (orderId: string): boolean => {
-    const order = state.orders.find((o) => o.id === orderId);
-    if (!order || order.status === 'completed' || order.status === 'ready_pickup') {
-      return false;
+  // Clear submit error
+  const clearSubmitError = useCallback(() => {
+    setSubmitError(null);
+  }, []);
+
+  // Submit Order to API
+  const submitOrder = useCallback(async (formData: OrderFormData): Promise<ApiOrder> => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Build the order items from cart
+      // Convert string productId to number for the API
+      const orderItems = state.cart.map((item) => ({
+        productId: parseInt(item.productId, 10),
+        quantity: item.quantity,
+      }));
+
+      if (orderItems.length === 0) {
+        throw new Error('Cart is empty');
+      }
+
+      // Build CreateOrderDto payload matching backend structure
+      const createOrderPayload: CreateOrderDto = {
+        customerName: formData.customerName,
+        studentId: formData.studentId,
+        contactNumber: formData.contactNumber,
+        customerEmail: formData.customerEmail,
+        items: orderItems,
+      };
+
+      // Call the API
+      const createdOrder = await ordersApi.createOrder(createOrderPayload);
+
+      // Clear the cart on success
+      dispatch({ type: 'CLEAR_CART' });
+
+      return createdOrder;
+    } catch (error) {
+      // Handle error and provide user-friendly message
+      let errorMessage = 'Failed to submit order. Please try again.';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Handle axios error response
+        const axiosError = error as { response?: { data?: { message?: string | string[] } } };
+        if (axiosError.response?.data?.message) {
+          const msg = axiosError.response.data.message;
+          errorMessage = Array.isArray(msg) ? msg.join(', ') : msg;
+        }
+      }
+
+      setSubmitError(errorMessage);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    dispatch({ type: 'CANCEL_ORDER', payload: orderId });
-    return true;
-  };
-
-  // Update Order Status
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
-    dispatch({ type: 'UPDATE_STATUS', payload: { orderId, status } });
-  };
-
-  // Process Payment
-  const processPayment = (orderId: string, method: string, reference?: string) => {
-    dispatch({
-      type: 'UPDATE_PAYMENT',
-      payload: { orderId, paymentStatus: 'processing', method, reference },
-    });
-
-    // Simulate payment processing
-    setTimeout(() => {
-      dispatch({
-        type: 'UPDATE_PAYMENT',
-        payload: { orderId, paymentStatus: 'completed' },
-      });
-      dispatch({
-        type: 'UPDATE_STATUS',
-        payload: { orderId, status: 'ready_pickup' },
-      });
-    }, 2000);
-  };
-
-  // Get Order by ID
-  const getOrderById = (orderId: string) => state.orders.find((o) => o.id === orderId);
+  }, [state.cart]);
 
   // Get Product by ID
-  const getProductByIdFromState = (productId: string) => 
-    state.products.find((p) => p.id === productId) || getProductById(productId);
+  const getProductByIdFromState = (productId: string) =>
+    state.products.find((p) => p.id === productId);
 
   // Status Display Text
   const getStatusDisplayText = (status: OrderStatus): string => {
@@ -289,6 +267,9 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
   const addToCart = (productId: string, quantity: number): boolean => {
     const product = state.products.find((p) => p.id === productId);
     if (!product) return false;
+
+    // Check if product is out of stock
+    if (product.stock === 0) return false;
 
     const existingCartItem = state.cart.find((item) => item.productId === productId);
     const currentCartQty = existingCartItem ? existingCartItem.quantity : 0;
@@ -341,14 +322,14 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
   };
 
   const value: OrderContextType = {
-    orders: state.orders,
     products: state.products,
     cart: state.cart,
-    addOrder,
-    cancelOrder,
-    updateOrderStatus,
-    processPayment,
-    getOrderById,
+    isLoadingProducts,
+    productsError,
+    submitOrder,
+    isSubmitting,
+    submitError,
+    clearSubmitError,
     getProductById: getProductByIdFromState,
     getStatusDisplayText,
     getPaymentStatusDisplayText,

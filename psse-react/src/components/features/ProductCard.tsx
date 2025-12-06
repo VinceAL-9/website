@@ -4,13 +4,22 @@ import type { Product } from '../../types';
 
 interface ProductCardProps {
   product: Product;
-  onOrder: (product: Product) => void;
+  onOrder?: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
 }
 
 export const ProductCard = ({ product, onOrder, onAddToCart }: ProductCardProps) => {
   const isOutOfStock = product.stock === 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
+
+  // Handler for primary action - uses onOrder if provided, otherwise onAddToCart
+  const handlePrimaryAction = () => {
+    if (onOrder) {
+      onOrder(product);
+    } else if (onAddToCart) {
+      onAddToCart(product);
+    }
+  };
 
   return (
     <Card className={`h-full flex flex-col ${isOutOfStock ? 'opacity-75' : ''}`}>
@@ -43,7 +52,7 @@ export const ProductCard = ({ product, onOrder, onAddToCart }: ProductCardProps)
             <span className="text-sm text-gray-500">Stock: {product.stock}</span>
           </div>
           <div className="flex gap-2">
-            {onAddToCart && (
+            {onAddToCart && onOrder && (
               <Button
                 variant="secondary"
                 disabled={isOutOfStock}
@@ -57,11 +66,11 @@ export const ProductCard = ({ product, onOrder, onAddToCart }: ProductCardProps)
             <Button
               variant="primary"
               disabled={isOutOfStock}
-              onClick={() => onOrder(product)}
-              className={onAddToCart ? 'flex-1' : 'w-full'}
+              onClick={handlePrimaryAction}
+              className={(onAddToCart && onOrder) ? 'flex-1' : 'w-full'}
             >
               <FaShoppingCart className="mr-1" />
-              {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
+              {isOutOfStock ? 'Out of Stock' : (onOrder ? 'Buy Now' : 'Add to Cart')}
             </Button>
           </div>
         </div>
