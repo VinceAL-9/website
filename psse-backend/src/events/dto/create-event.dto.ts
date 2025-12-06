@@ -20,6 +20,10 @@ export class CreateEventDto {
   @IsNotEmpty()
   location: string;
 
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @IsBoolean()
   @IsOptional()
   isUpcoming?: boolean;

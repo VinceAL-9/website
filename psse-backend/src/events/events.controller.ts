@@ -1,11 +1,29 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Patch, 
+  Delete, 
+  Body, 
+  Param, 
+  ParseIntPipe, 
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { EventsService } from './events.service';
 import { CreateEventDto, UpdateEventDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
+import { CloudinaryService } from '../cloudinary';
 
 @Controller('events')
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get()
   findAll() {
@@ -19,14 +37,58 @@ export class EventsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  create(@Body() createEventDto: CreateEventDto) {
-    return this.eventsService.create(createEventDto);
+  @UseInterceptors(FileInterceptor('image'))
+  async create(
+    @Body() createEventDto: CreateEventDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    let imageUrl = createEventDto.imageUrl;
+
+    // If a file is uploaded, upload it to Cloudinary and use that URL
+    if (file) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadImage(file);
+        imageUrl = uploadResult.secure_url;
+      } catch (error) {
+        throw new BadRequestException('Failed to upload image to Cloudinary');
+      }
+    }
+
+    // If no file uploaded and no imageUrl provided, throw error
+    if (!imageUrl) {
+      throw new BadRequestException('Either upload an image file or provide an imageUrl');
+    }
+
+    return this.eventsService.create({
+      ...createEventDto,
+      imageUrl,
+    });
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateEventDto: UpdateEventDto) {
-    return this.eventsService.update(id, updateEventDto);
+  @UseInterceptors(FileInterceptor('image'))
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateEventDto: UpdateEventDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    let imageUrl = updateEventDto.imageUrl;
+
+    // If a file is uploaded, upload it to Cloudinary and use that URL
+    if (file) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadImage(file);
+        imageUrl = uploadResult.secure_url;
+      } catch (error) {
+        throw new BadRequestException('Failed to upload image to Cloudinary');
+      }
+    }
+
+    return this.eventsService.update(id, {
+      ...updateEventDto,
+      ...(imageUrl && { imageUrl }),
+    });
   }
 
   @Delete(':id')
