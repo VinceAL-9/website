@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { OrderProvider } from './context';
 import { Home, About, Events, Merchandise, AdminLogin, AdminDashboard } from './pages';
 import { ProtectedRoute } from './components/common';
@@ -6,6 +7,7 @@ import { ProtectedRoute } from './components/common';
 function App() {
   return (
     <OrderProvider>
+      <Toaster position="top-right" richColors />
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />

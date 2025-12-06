@@ -17,7 +17,7 @@ export const Login = () => {
 
     try {
       const response = await authApi.login(email, password);
-      localStorage.setItem('access_token', response.accessToken);
+      localStorage.setItem('access_token', response.access_token);
       navigate('/admin/dashboard');
     } catch (err: unknown) {
       if (err instanceof Error) {

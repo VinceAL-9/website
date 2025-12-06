@@ -2,3 +2,4 @@ export { OfficerCard } from './OfficerCard';
 export { EventCard } from './EventCard';
 export { ProductCard } from './ProductCard';
 export { CheckoutModal } from './CheckoutModal';
+export { default as CreateEventModal } from './CreateEventModal';

@@ -200,11 +200,23 @@ export const Dashboard = () => {
     }
 
     try {
+      console.log('Attempting to delete event:', event.id);
       await eventsApi.deleteEvent(event.id);
+      console.log('Event deleted successfully');
       loadEvents();
-    } catch (err) {
-      console.error('Error deleting event:', err);
-      alert('Failed to delete event. Please try again.');
+    } catch (err: any) {
+      console.error('Error deleting event:', {
+        eventId: event.id,
+        error: err,
+        response: err.response,
+        status: err.response?.status,
+        message: err.response?.data?.message,
+      });
+      
+      // Don't show alert if it's a 401 (user will be redirected to login)
+      if (err.response?.status !== 401) {
+        alert(`Failed to delete event: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+      }
     }
   };
 

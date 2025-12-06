@@ -155,6 +155,5 @@ export interface LoginDto {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  user: ApiUser;
+  access_token: string;
 }

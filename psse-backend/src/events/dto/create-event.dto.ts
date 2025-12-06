@@ -14,15 +14,11 @@ export class CreateEventDto {
 
   @IsString()
   @IsNotEmpty()
-  imageUrl: string;
-
-  @IsString()
-  @IsNotEmpty()
   location: string;
 
   @IsString()
-  @IsOptional()
-  imageUrl?: string;
+  @IsNotEmpty()
+  imageUrl: string;
 
   @IsBoolean()
   @IsOptional()

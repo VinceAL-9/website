@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -14,7 +15,11 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('access_token');
-    if (token && config.headers) {
+    
+    if (token && token !== 'undefined') {
+      if (!config.headers) {
+        config.headers = {} as any;
+      }
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -28,12 +33,29 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Extract error message from backend API response
+    const errorMessage = 
+      error.response?.data?.message || 
+      error.response?.data?.error ||
+      error.message || 
+      'An unexpected error occurred';
+    
+    // Show error toast
+    toast.error(errorMessage);
+    
+    // Handle 401 Unauthorized - clear token and redirect to login
     if (error.response?.status === 401) {
-      // Handle unauthorized access - clear token and redirect
+      console.error('401 Unauthorized error:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        message: errorMessage,
+        hasAuthHeader: !!error.config?.headers?.Authorization,
+      });
       localStorage.removeItem('access_token');
-      // Optionally redirect to login page
-      // window.location.href = '/login';
+      window.location.href = '/admin/login';
     }
+    
     return Promise.reject(error);
   }
 );
