@@ -11,7 +11,7 @@ export const useScrollAnimation = <T extends HTMLElement>(
   options: UseScrollAnimationOptions = {}
 ): [RefObject<T | null>, boolean] => {
   const { threshold = 0.1, rootMargin = '0px 0px -50px 0px', triggerOnce = true } = options;
-  
+
   const ref = useRef<T>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -49,29 +49,38 @@ export const useScrollAnimation = <T extends HTMLElement>(
 export const useScrollAnimationList = (count: number, delay: number = 100) => {
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
   const [isContainerVisible, setIsContainerVisible] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerNode, setContainerNode] = useState<HTMLDivElement | null>(null);
 
+  // Use a callback ref to track when the container is attached/detached
+  const containerRef = (node: HTMLDivElement | null) => {
+    setContainerNode(node);
+  };
+
+  // Set up IntersectionObserver when container is available
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    if (!containerNode) return;
+
+    // If already visible, don't re-observe
+    if (isContainerVisible) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setIsContainerVisible(true);
-            observer.unobserve(container);
+            observer.unobserve(containerNode);
           }
         });
       },
       { threshold: 0.1 }
     );
 
-    observer.observe(container);
+    observer.observe(containerNode);
 
     return () => observer.disconnect();
-  }, []);
+  }, [containerNode, isContainerVisible]);
 
+  // Animate items when container becomes visible
   useEffect(() => {
     if (!isContainerVisible) return;
 

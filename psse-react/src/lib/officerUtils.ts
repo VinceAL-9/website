@@ -30,6 +30,37 @@ export const officerCategories: Record<OfficerCategory, OfficerCategoryInfo> = {
 export const categoryOrder: OfficerCategory[] = ['executive', 'administrative', 'audit', 'communications'];
 
 /**
+ * Maps various category formats from the database to the normalized frontend categories.
+ * This handles both seed data categories and new categories from the Dashboard.
+ */
+function normalizeCategory(rawCategory: string): OfficerCategory {
+  const category = rawCategory.toLowerCase().trim();
+
+  // Direct matches (from Dashboard form with lowercase values)
+  if (category === 'executive' || category === 'administrative' || category === 'audit' || category === 'communications') {
+    return category as OfficerCategory;
+  }
+
+  // Seed data mappings
+  if (category.includes('executive')) {
+    return 'executive';
+  }
+  if (category.includes('administrative') || category.includes('finance') || category.includes('treasurer')) {
+    return 'administrative';
+  }
+  if (category.includes('audit')) {
+    return 'audit';
+  }
+  if (category.includes('communications') || category.includes('representative') || category.includes('ambassador')) {
+    return 'communications';
+  }
+
+  // Default fallback - log for debugging
+  console.warn(`Unknown officer category: "${rawCategory}", defaulting to 'executive'`);
+  return 'executive';
+}
+
+/**
  * Grouped officers by category
  */
 export interface GroupedOfficers {
@@ -47,11 +78,11 @@ export interface GroupedOfficers {
  */
 export function groupOfficersByCategory(officers: ApiOfficer[]): GroupedOfficers[] {
   // Create a map for faster lookup
-  const categoryMap = new Map<string, ApiOfficer[]>();
+  const categoryMap = new Map<OfficerCategory, ApiOfficer[]>();
 
-  // Group officers by category
+  // Group officers by normalized category
   for (const officer of officers) {
-    const category = officer.category.toLowerCase();
+    const category = normalizeCategory(officer.category);
     if (!categoryMap.has(category)) {
       categoryMap.set(category, []);
     }
@@ -65,14 +96,14 @@ export function groupOfficersByCategory(officers: ApiOfficer[]): GroupedOfficers
 
   // Build the grouped result following hierarchy order
   const grouped: GroupedOfficers[] = [];
-  
+
   for (const category of categoryOrder) {
-    const officers = categoryMap.get(category) || [];
-    if (officers.length > 0) {
+    const categoryOfficers = categoryMap.get(category) || [];
+    if (categoryOfficers.length > 0) {
       grouped.push({
         category,
         categoryInfo: officerCategories[category],
-        officers,
+        officers: categoryOfficers,
       });
     }
   }
@@ -89,6 +120,7 @@ export function mapApiOfficerToOfficer(apiOfficer: ApiOfficer) {
     title: apiOfficer.position,
     name: apiOfficer.name,
     image: apiOfficer.photoUrl,
-    category: apiOfficer.category.toLowerCase() as OfficerCategory,
+    category: normalizeCategory(apiOfficer.category),
   };
 }
+

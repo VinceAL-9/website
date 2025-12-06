@@ -24,7 +24,7 @@ export const About = () => {
 
         const response = await officersApi.getOfficers();
         const grouped = groupOfficersByCategory(response);
-        
+
         setGroupedOfficers(grouped);
         setTotalOfficers(response.length);
       } catch (err) {
@@ -120,26 +120,24 @@ export const About = () => {
                   </div>
 
                   <div
-                    className={`grid gap-4 ${
-                      group.category === 'executive'
+                    className={`grid gap-4 ${group.category === 'executive'
                         ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
                         : group.category === 'administrative'
-                        ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7'
-                        : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
-                    }`}
+                          ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7'
+                          : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+                      }`}
                   >
                     {group.officers.map((apiOfficer, officerIndex) => {
                       const officer = mapApiOfficerToOfficer(apiOfficer);
                       const flatIndex = getOfficerIndex(groupIndex, officerIndex);
-                      
+
                       return (
                         <div
                           key={officer.id}
-                          className={`transition-all duration-500 ${
-                            visibleItems.has(flatIndex)
+                          className={`transition-all duration-500 h-full ${visibleItems.has(flatIndex)
                               ? 'opacity-100 translate-y-0'
                               : 'opacity-0 translate-y-8'
-                          }`}
+                            }`}
                         >
                           <OfficerCard officer={officer} />
                         </div>

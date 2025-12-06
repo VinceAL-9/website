@@ -124,6 +124,39 @@ export const officersApi = {
     });
     return response.data;
   },
+
+  /**
+   * Create a new officer (Admin)
+   * Accepts FormData for file upload
+   */
+  createOfficer: async (officerData: FormData): Promise<ApiOfficer> => {
+    const response = await axiosInstance.post<ApiOfficer>('/officers', officerData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Update an officer (Admin)
+   * Accepts FormData for file upload
+   */
+  updateOfficer: async (id: number, officerData: FormData): Promise<ApiOfficer> => {
+    const response = await axiosInstance.patch<ApiOfficer>(`/officers/${id}`, officerData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Delete an officer (Admin)
+   */
+  deleteOfficer: async (id: number): Promise<void> => {
+    await axiosInstance.delete(`/officers/${id}`);
+  },
 };
 
 /**
