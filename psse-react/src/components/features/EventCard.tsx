@@ -1,4 +1,4 @@
-import { FaCalendarAlt, FaTrophy, FaUsers } from 'react-icons/fa';
+import { FaCalendarAlt } from 'react-icons/fa';
 import { Card, CardImage, CardBody, Badge } from '../common';
 import type { Event } from '../../types';
 

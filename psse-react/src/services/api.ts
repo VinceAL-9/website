@@ -257,4 +257,30 @@ export const authApi = {
     });
     return response.data;
   },
+
+  /**
+   * Register a new user
+   */
+  register: async (data: {
+    name: string;
+    studentId: string;
+    email: string;
+    password: string;
+  }): Promise<{ id: number; email: string; name: string; studentId: string; role: string }> => {
+    const response = await axiosInstance.post('/auth/register', data);
+    return response.data;
+  },
+
+  /**
+   * Get current user profile (requires token)
+   */
+  getProfile: async (token: string): Promise<{ id: number; email: string; name: string | null; studentId: string | null; role: 'MEMBER' | 'ADMIN' }> => {
+    const response = await axiosInstance.get('/auth/profile', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
 };
+

@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { FaShoppingCart, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaShoppingCart, FaSpinner, FaExclamationTriangle, FaSignInAlt } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
 import { Button } from '../components/common';
 import { ProductCard, CheckoutModal } from '../components/features';
-import { useOrders } from '../context';
+import { useOrders, useUserAuth } from '../context';
 import { useScrollAnimationList } from '../hooks';
 import type { Product } from '../types';
 
@@ -19,6 +20,8 @@ export const Merchandise = () => {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const { isAuthenticated, isLoading: authLoading } = useUserAuth();
 
   const {
     products,
@@ -108,22 +111,39 @@ export const Merchandise = () => {
             Support PSSE with our exclusive merchandise designed by our talented members!
           </p>
 
-          {/* Cart Button */}
-          <div className="flex justify-center">
-            <Button
-              variant="primary"
-              onClick={() => setIsCheckoutModalOpen(true)}
-              className="relative"
-            >
-              <FaShoppingCart className="mr-2" />
-              View Cart
-              {getCartItemCount() > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {getCartItemCount()}
-                </span>
-              )}
-            </Button>
-          </div>
+          {/* Cart Button - Only for authenticated users */}
+          {!authLoading && isAuthenticated && (
+            <div className="flex justify-center">
+              <Button
+                variant="primary"
+                onClick={() => setIsCheckoutModalOpen(true)}
+                className="relative"
+              >
+                <FaShoppingCart className="mr-2" />
+                View Cart
+                {getCartItemCount() > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {getCartItemCount()}
+                  </span>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Login Prompt - For non-authenticated users */}
+          {!authLoading && !isAuthenticated && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-lg mx-auto">
+              <p className="text-blue-700 mb-3">
+                <FaSignInAlt className="inline mr-2" />
+                Login to purchase merchandise
+              </p>
+              <Link to="/user/login">
+                <Button variant="primary" size="sm">
+                  Login to Purchase
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -171,7 +191,8 @@ export const Merchandise = () => {
                 >
                   <ProductCard
                     product={product}
-                    onAddToCart={handleAddToCart}
+                    onAddToCart={isAuthenticated ? handleAddToCart : undefined}
+                    showPurchaseOptions={isAuthenticated}
                   />
                 </div>
               ))}

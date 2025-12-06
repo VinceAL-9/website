@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FaCalendarCheck, FaGraduationCap, FaSpinner, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaSpinner, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
-import { Card, CardBody, Button, Modal, Badge } from '../components/common';
+import { Button, Modal, Badge } from '../components/common';
 import { EventCard } from '../components/features';
 import { eventsApi } from '../services/api';
 import { useScrollAnimationList } from '../hooks';
@@ -15,20 +15,20 @@ function mapApiEventToEvent(apiEvent: ApiEvent): Event {
   const getBadge = (event: ApiEvent): { text: string; variant: BadgeVariant } => {
     const title = event.title.toLowerCase();
     const desc = event.description.toLowerCase();
-    
+
     if (title.includes('hackathon')) return { text: 'Hackathon', variant: 'danger' };
     if (title.includes('workshop')) return { text: 'Workshop', variant: 'secondary' };
-    if (title.includes('competition') || title.includes('championship')) 
+    if (title.includes('competition') || title.includes('championship'))
       return { text: 'Competition', variant: 'primary' };
-    if (title.includes('ceremony') || title.includes('induction')) 
+    if (title.includes('ceremony') || title.includes('induction'))
       return { text: 'Ceremony', variant: 'info' };
     if (title.includes('contest')) return { text: 'Contest', variant: 'warning' };
-    if (title.includes('talk') || title.includes('seminar')) 
+    if (title.includes('talk') || title.includes('seminar'))
       return { text: 'Talk', variant: 'primary' };
-    if (title.includes('career') || title.includes('fair')) 
+    if (title.includes('career') || title.includes('fair'))
       return { text: 'Career', variant: 'success' };
     if (desc.includes('national')) return { text: 'National Competition', variant: 'success' };
-    
+
     return { text: 'Event', variant: 'primary' };
   };
 
@@ -37,8 +37,8 @@ function mapApiEventToEvent(apiEvent: ApiEvent): Event {
     title: apiEvent.title,
     description: apiEvent.description,
     image: apiEvent.imageUrl,
-    date: new Date(apiEvent.date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
+    date: new Date(apiEvent.date).toLocaleDateString('en-US', {
+      year: 'numeric',
       month: 'long',
       day: 'numeric'
     }),
@@ -70,7 +70,7 @@ export const Events = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch all events in parallel
         const [pastResponse, upcomingResponse] = await Promise.all([
           eventsApi.getPastEvents(),
@@ -129,9 +129,8 @@ export const Events = () => {
               {pastEvents.map((event, index) => (
                 <div
                   key={event.id}
-                  className={`transition-all duration-500 ${
-                    visibleEvents.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                  }`}
+                  className={`transition-all duration-500 ${visibleEvents.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                    }`}
                   onClick={() => setSelectedEvent(event)}
                 >
                   <EventCard event={event} />

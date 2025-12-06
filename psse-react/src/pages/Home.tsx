@@ -43,19 +43,19 @@ const studentLifeIcons: Record<string, React.ReactNode> = {
 function mapApiEventToEvent(apiEvent: ApiEvent): Event {
   const getBadge = (event: ApiEvent): { text: string; variant: BadgeVariant } => {
     const title = event.title.toLowerCase();
-    
+
     if (title.includes('hackathon')) return { text: 'Hackathon', variant: 'danger' };
     if (title.includes('workshop')) return { text: 'Workshop', variant: 'secondary' };
-    if (title.includes('competition') || title.includes('championship')) 
+    if (title.includes('competition') || title.includes('championship'))
       return { text: 'Competition', variant: 'primary' };
-    if (title.includes('ceremony') || title.includes('induction')) 
+    if (title.includes('ceremony') || title.includes('induction'))
       return { text: 'Ceremony', variant: 'info' };
     if (title.includes('contest')) return { text: 'Contest', variant: 'warning' };
-    if (title.includes('talk') || title.includes('seminar')) 
+    if (title.includes('talk') || title.includes('seminar'))
       return { text: 'Talk', variant: 'primary' };
-    if (title.includes('career') || title.includes('fair')) 
+    if (title.includes('career') || title.includes('fair'))
       return { text: 'Career', variant: 'success' };
-    
+
     return { text: 'Upcoming', variant: 'success' };
   };
 
@@ -64,8 +64,8 @@ function mapApiEventToEvent(apiEvent: ApiEvent): Event {
     title: apiEvent.title,
     description: apiEvent.description,
     image: apiEvent.imageUrl,
-    date: new Date(apiEvent.date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
+    date: new Date(apiEvent.date).toLocaleDateString('en-US', {
+      year: 'numeric',
       month: 'long',
       day: 'numeric',
     }),
@@ -104,7 +104,7 @@ export const Home = () => {
       try {
         setEventsLoading(true);
         setEventsError(null);
-        
+
         const response = await eventsApi.getUpcomingEvents();
         // Limit to 3 upcoming events for the home page
         const limitedEvents = response.slice(0, 3).map(mapApiEventToEvent);
@@ -183,11 +183,10 @@ export const Home = () => {
             {coreActivities.map((activity, index) => (
               <Card
                 key={activity.id}
-                className={`text-center transition-all duration-500 ${
-                  visibleActivities.has(index)
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 translate-y-8'
-                }`}
+                className={`text-center transition-all duration-500 ${visibleActivities.has(index)
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-8'
+                  }`}
               >
                 <CardBody>
                   <div className="mb-4 flex justify-center">
@@ -213,9 +212,8 @@ export const Home = () => {
               <Badge
                 key={tech.name}
                 variant="primary"
-                className={`text-base px-4 py-2 transition-all duration-300 ${
-                  visibleTech.has(index) ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
-                }`}
+                className={`text-base px-4 py-2 transition-all duration-300 ${visibleTech.has(index) ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+                  }`}
               >
                 {tech.name}
               </Badge>
@@ -298,9 +296,8 @@ export const Home = () => {
             {studentLifeItems.map((item, index) => (
               <Card
                 key={item.id}
-                className={`transition-all duration-500 ${
-                  visibleLife.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
+                className={`transition-all duration-500 ${visibleLife.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                  }`}
               >
                 <CardBody>
                   <div className="flex items-center gap-4">
@@ -386,6 +383,7 @@ export const Home = () => {
               <li>Take part in PSSE events, workshops, and projects</li>
               <li>Connect with fellow SE students and faculty mentors</li>
               <li>Develop your skills in leadership, collaboration, and technology</li>
+              <li>Purchase exclusive PSSE merchandise</li>
             </ul>
           </div>
 
@@ -401,6 +399,25 @@ export const Home = () => {
           <p className="text-gray-600">
             We look forward to seeing you actively contribute and grow with the PSSE community!
           </p>
+
+          {/* Member Login/Register Buttons */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-4 text-center">
+              Create an account to access exclusive member features like merchandise purchasing.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link to="/user/login" className="flex-1" onClick={() => setIsJoinModalOpen(false)}>
+                <Button variant="primary" className="w-full">
+                  Login
+                </Button>
+              </Link>
+              <Link to="/user/register" className="flex-1" onClick={() => setIsJoinModalOpen(false)}>
+                <Button variant="primary" className="w-full">
+                  Register
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </Modal>
     </PageLayout>

@@ -1,15 +1,16 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma';
 import { JwtPayload } from './interfaces';
+import { RegisterDto } from './dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   /**
    * Validates a user by email and password.
@@ -62,6 +63,47 @@ export class AuthService {
         studentId: true,
         createdAt: true,
         // Explicitly exclude password
+      },
+    });
+
+    return user;
+  }
+
+  /**
+   * Registers a new user.
+   * Checks if user exists, hashes password, and creates user with MEMBER role.
+   */
+  async register(dto: RegisterDto) {
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('A user with this email already exists');
+    }
+
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
+
+    // Create the user with MEMBER role
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        name: dto.name,
+        studentId: dto.studentId,
+        role: 'MEMBER',
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        studentId: true,
+        role: true,
+        createdAt: true,
+        // Exclude password from response
       },
     });
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
 import { authApi } from '../../services/api';
 
@@ -123,6 +123,19 @@ export const Login = () => {
               )}
             </button>
           </form>
+
+          {/* Register Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 text-sm">
+              Don't have an account?{' '}
+              <Link
+                to="/admin/register"
+                className="text-psse-accent hover:text-blue-600 font-medium transition-colors"
+              >
+                Register here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
