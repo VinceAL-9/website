@@ -1,4 +1,5 @@
 import { IsString, IsDateString, IsBoolean, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UpdateEventDto {
   @IsString()
@@ -21,6 +22,11 @@ export class UpdateEventDto {
   @IsOptional()
   location?: string;
 
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
   @IsBoolean()
   @IsOptional()
   isUpcoming?: boolean;

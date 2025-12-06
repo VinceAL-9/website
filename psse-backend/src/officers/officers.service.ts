@@ -28,7 +28,14 @@ export class OfficersService {
 
   async create(createOfficerDto: CreateOfficerDto) {
     return this.prisma.officer.create({
-      data: createOfficerDto,
+      data: {
+        name: createOfficerDto.name,
+        position: createOfficerDto.position,
+        category: createOfficerDto.category,
+        photoUrl: createOfficerDto.photoUrl || '',
+        academicYear: createOfficerDto.academicYear,
+        order: createOfficerDto.order,
+      },
     });
   }
 

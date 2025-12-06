@@ -7,6 +7,7 @@ import {
   Body, 
   Param, 
   ParseIntPipe, 
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -26,8 +27,10 @@ export class EventsController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.eventsService.findAll();
+  findAll(@Query('isUpcoming') isUpcoming?: string) {
+    // Convert query string to boolean
+    const isUpcomingBool = isUpcoming === 'true' ? true : isUpcoming === 'false' ? false : undefined;
+    return this.eventsService.findAll(isUpcomingBool);
   }
 
   @Get(':id')
@@ -47,7 +50,7 @@ export class EventsController {
     // If a file is uploaded, upload it to Cloudinary and use that URL
     if (file) {
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file);
+        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-events');
         imageUrl = uploadResult.secure_url;
       } catch (error) {
         throw new BadRequestException('Failed to upload image to Cloudinary');
@@ -78,7 +81,7 @@ export class EventsController {
     // If a file is uploaded, upload it to Cloudinary and use that URL
     if (file) {
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file);
+        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-events');
         imageUrl = uploadResult.secure_url;
       } catch (error) {
         throw new BadRequestException('Failed to upload image to Cloudinary');

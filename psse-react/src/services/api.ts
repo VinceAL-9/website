@@ -53,17 +53,27 @@ export const eventsApi = {
 
   /**
    * Create a new event (Admin)
+   * Accepts FormData for file upload
    */
-  createEvent: async (eventData: CreateEventDto): Promise<ApiEvent> => {
-    const response = await axiosInstance.post<ApiEvent>('/events', eventData);
+  createEvent: async (eventData: CreateEventDto | FormData): Promise<ApiEvent> => {
+    const response = await axiosInstance.post<ApiEvent>('/events', eventData, {
+      headers: eventData instanceof FormData ? {
+        'Content-Type': 'multipart/form-data',
+      } : undefined,
+    });
     return response.data;
   },
 
   /**
    * Update an event (Admin)
+   * Accepts FormData for file upload
    */
-  updateEvent: async (id: number, eventData: UpdateEventDto): Promise<ApiEvent> => {
-    const response = await axiosInstance.patch<ApiEvent>(`/events/${id}`, eventData);
+  updateEvent: async (id: number, eventData: UpdateEventDto | FormData): Promise<ApiEvent> => {
+    const response = await axiosInstance.patch<ApiEvent>(`/events/${id}`, eventData, {
+      headers: eventData instanceof FormData ? {
+        'Content-Type': 'multipart/form-data',
+      } : undefined,
+    });
     return response.data;
   },
 

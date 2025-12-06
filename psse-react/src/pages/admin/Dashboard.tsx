@@ -26,7 +26,6 @@ interface EventFormData {
   title: string;
   date: string;
   description: string;
-  imageUrl: string;
   location: string;
   isUpcoming: boolean;
 }
@@ -35,7 +34,6 @@ const initialEventForm: EventFormData = {
   title: '',
   date: '',
   description: '',
-  imageUrl: '',
   location: '',
   isUpcoming: true,
 };
@@ -62,6 +60,8 @@ export const Dashboard = () => {
   const [editingEvent, setEditingEvent] = useState<ApiEvent | null>(null);
   const [eventForm, setEventForm] = useState<EventFormData>(initialEventForm);
   const [eventSubmitting, setEventSubmitting] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Orders state
   const [orders, setOrders] = useState<ApiOrder[]>([]);
@@ -132,6 +132,8 @@ export const Dashboard = () => {
   const openAddEventModal = () => {
     setEditingEvent(null);
     setEventForm(initialEventForm);
+    setSelectedImageFile(null);
+    setImagePreview(null);
     setShowEventModal(true);
   };
 
@@ -141,10 +143,11 @@ export const Dashboard = () => {
       title: event.title,
       date: event.date.split('T')[0], // Format for date input
       description: event.description,
-      imageUrl: event.imageUrl,
       location: event.location,
       isUpcoming: event.isUpcoming,
     });
+    setSelectedImageFile(null);
+    setImagePreview(event.imageUrl); // Show existing image
     setShowEventModal(true);
   };
 
@@ -152,6 +155,8 @@ export const Dashboard = () => {
     setShowEventModal(false);
     setEditingEvent(null);
     setEventForm(initialEventForm);
+    setSelectedImageFile(null);
+    setImagePreview(null);
   };
 
   const handleEventFormChange = (
@@ -169,19 +174,28 @@ export const Dashboard = () => {
     setEventSubmitting(true);
 
     try {
-      const eventData: CreateEventDto | UpdateEventDto = {
-        title: eventForm.title,
-        description: eventForm.description,
-        date: new Date(eventForm.date).toISOString(),
-        imageUrl: eventForm.imageUrl,
-        location: eventForm.location,
-        isUpcoming: eventForm.isUpcoming,
-      };
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('title', eventForm.title);
+      formData.append('description', eventForm.description);
+      formData.append('date', new Date(eventForm.date).toISOString());
+      formData.append('location', eventForm.location);
+      formData.append('isUpcoming', eventForm.isUpcoming.toString());
+
+      // Add image file if selected
+      if (selectedImageFile) {
+        formData.append('image', selectedImageFile);
+      }
 
       if (editingEvent) {
-        await eventsApi.updateEvent(editingEvent.id, eventData);
+        await eventsApi.updateEvent(editingEvent.id, formData);
       } else {
-        await eventsApi.createEvent(eventData as CreateEventDto);
+        // For create, image is required
+        if (!selectedImageFile) {
+          alert('Please select an image for the event.');
+          return;
+        }
+        await eventsApi.createEvent(formData);
       }
 
       closeEventModal();
@@ -622,24 +636,50 @@ export const Dashboard = () => {
             />
           </div>
 
-          {/* Image URL */}
+          {/* Image Upload */}
           <div>
             <label
-              htmlFor="imageUrl"
+              htmlFor="image"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Image URL *
+              Event Image {!editingEvent && '*'}
             </label>
             <input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              required
-              value={eventForm.imageUrl}
-              onChange={handleEventFormChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
-              placeholder="https://example.com/image.jpg"
+              id="image"
+              name="image"
+              type="file"
+              accept="image/*"
+              required={!editingEvent}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedImageFile(file);
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setImagePreview(reader.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                } else {
+                  setSelectedImageFile(null);
+                  setImagePreview(editingEvent?.imageUrl || null);
+                }
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-psse-accent file:text-white hover:file:bg-psse-accent/90"
             />
+            {imagePreview && (
+              <div className="mt-3">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                />
+              </div>
+            )}
+            {editingEvent && !selectedImageFile && (
+              <p className="mt-1 text-sm text-gray-500">
+                Leave empty to keep existing image
+              </p>
+            )}
           </div>
 
           {/* Location */}

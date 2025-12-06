@@ -1,13 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
+import { CloudinaryService } from '../cloudinary';
 import { CreateEventDto, UpdateEventDto } from './dto';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
-  async findAll() {
+  async findAll(isUpcoming?: boolean) {
+    const where: any = {};
+    
+    if (isUpcoming !== undefined) {
+      where.isUpcoming = isUpcoming;
+    }
+
     return this.prisma.event.findMany({
+      where,
       orderBy: {
         date: 'desc',
       },
@@ -26,17 +37,32 @@ export class EventsService {
     return event;
   }
 
-  async create(createEventDto: CreateEventDto) {
+  async create(createEventDto: CreateEventDto & { imageUrl: string }) {
     return this.prisma.event.create({
       data: {
-        ...createEventDto,
+        title: createEventDto.title,
+        description: createEventDto.description,
         date: new Date(createEventDto.date),
+        location: createEventDto.location,
+        imageUrl: createEventDto.imageUrl,
+        isUpcoming: createEventDto.isUpcoming ?? true,
       },
     });
   }
 
   async update(id: number, updateEventDto: UpdateEventDto) {
-    await this.findOne(id);
+    const existingEvent = await this.findOne(id);
+
+    // If a new imageUrl is provided and it's different from the existing one,
+    // delete the old image from Cloudinary
+    if (updateEventDto.imageUrl && updateEventDto.imageUrl !== existingEvent.imageUrl) {
+      try {
+        await this.cloudinaryService.deleteImage(existingEvent.imageUrl);
+      } catch (error) {
+        console.error('Failed to delete old image from Cloudinary:', error);
+        // Continue with update even if deletion fails
+      }
+    }
 
     return this.prisma.event.update({
       where: { id },
@@ -48,7 +74,17 @@ export class EventsService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    const event = await this.findOne(id);
+
+    // Delete the image from Cloudinary before removing the event
+    if (event.imageUrl) {
+      try {
+        await this.cloudinaryService.deleteImage(event.imageUrl);
+      } catch (error) {
+        console.error('Failed to delete image from Cloudinary:', error);
+        // Continue with deletion even if Cloudinary deletion fails
+      }
+    }
 
     return this.prisma.event.delete({
       where: { id },

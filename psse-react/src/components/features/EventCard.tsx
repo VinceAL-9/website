@@ -8,27 +8,16 @@ interface EventCardProps {
 
 export const EventCard = ({ event }: EventCardProps) => {
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col cursor-pointer hover:shadow-2xl transition-shadow duration-300">
       <CardImage src={event.image} alt={event.title} />
       <CardBody className="flex-1 flex flex-col">
         <Badge variant={event.badge.variant} className="mb-2 self-start">
           {event.badge.text}
         </Badge>
         <h5 className="text-lg font-semibold text-gray-900 mb-2">{event.title}</h5>
-        <p className="text-gray-600 text-sm flex-1">{event.description}</p>
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-          <span className="flex items-center gap-1">
-            <FaCalendarAlt className="text-psse-accent" />
-            {event.date}
-          </span>
-          <span className="flex items-center gap-1">
-            {event.stats.includes('Place') || event.stats.includes('Champion') ? (
-              <FaTrophy className="text-yellow-500" />
-            ) : (
-              <FaUsers className="text-psse-accent" />
-            )}
-            {event.stats}
-          </span>
+        <div className="flex items-center gap-2 mt-auto text-sm text-gray-500">
+          <FaCalendarAlt className="text-psse-accent" />
+          <span>{event.date}</span>
         </div>
       </CardBody>
     </Card>

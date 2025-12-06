@@ -4,9 +4,10 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   hover?: boolean;
+  onClick?: () => void;
 }
 
-export const Card = ({ children, className = '', hover = true }: CardProps) => {
+export const Card = ({ children, className = '', hover = true, onClick }: CardProps) => {
   return (
     <div
       className={`
@@ -14,6 +15,7 @@ export const Card = ({ children, className = '', hover = true }: CardProps) => {
         ${hover ? 'transition-all duration-300 hover:shadow-xl hover:-translate-y-1' : ''}
         ${className}
       `}
+      onClick={onClick}
     >
       {children}
     </div>
@@ -55,7 +57,7 @@ interface CardImageProps {
 
 export const CardImage = ({ src, alt, className = '' }: CardImageProps) => {
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden bg-gray-200">
       <img
         src={src}
         alt={alt}

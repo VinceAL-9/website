@@ -77,36 +77,65 @@ async function main() {
   }
 
   // ===========================================
-  // Seed Events (3 sample events)
+  // Seed Events (mix of past and upcoming events)
   // ===========================================
   console.log('📅 Seeding events...');
   const events = [
+    // Upcoming Events
     {
       title: 'PSSE General Assembly 2025',
       description:
         'Join us for our annual General Assembly where we discuss the plans and activities for the upcoming academic year. All members are encouraged to attend!',
       date: new Date('2025-01-15T14:00:00Z'),
-      imageUrl: '/images/events/general-assembly.jpg',
+      imageUrl: '/images/latest-events/growcon-ph-2025.jpg',
       location: 'College of Engineering Auditorium',
       isUpcoming: true,
     },
     {
-      title: 'Tech Talk: Introduction to Power Systems',
+      title: 'Tech Talk: Introduction to Software Architecture',
       description:
-        'A seminar covering the fundamentals of power systems engineering, featuring industry professionals sharing their insights and experiences.',
+        'A seminar covering modern software architecture patterns, featuring industry professionals sharing their insights and experiences.',
       date: new Date('2025-02-20T10:00:00Z'),
-      imageUrl: '/images/events/tech-talk.jpg',
-      location: 'Room 301, EE Building',
+      imageUrl: '/images/latest-events/merch-designing.jpg',
+      location: 'Room 301, Engineering Building',
       isUpcoming: true,
     },
+    // Past Events
     {
-      title: 'PSSE Industry Visit: Meralco Power Plant',
+      title: 'iThink Hackathon 2024',
       description:
-        'An educational trip to the Meralco Power Plant to observe real-world power systems operations. Limited slots available!',
-      date: new Date('2025-03-10T08:00:00Z'),
-      imageUrl: '/images/events/industry-visit.jpg',
-      location: 'Meralco Power Plant, Pasig City',
-      isUpcoming: true,
+        'A 24-hour coding competition where students built innovative software solutions. Teams competed for prizes and recognition.',
+      date: new Date('2024-11-15T08:00:00Z'),
+      imageUrl: '/images/latest-events/ithink-hackathon.jpg',
+      location: 'CPU Computer Laboratory',
+      isUpcoming: false,
+    },
+    {
+      title: 'GrowCon PH 2024',
+      description:
+        'National software engineering conference featuring industry leaders and innovative tech solutions. Students networked with professionals.',
+      date: new Date('2024-10-20T09:00:00Z'),
+      imageUrl: '/images/latest-events/growcon-ph-2025.jpg',
+      location: 'SMX Convention Center',
+      isUpcoming: false,
+    },
+    {
+      title: 'PSSE Merchandise Design Workshop',
+      description:
+        'Creative workshop where members designed official PSSE merchandise. Winning designs were produced for the organization.',
+      date: new Date('2024-09-10T13:00:00Z'),
+      imageUrl: '/images/latest-events/merch-designing.jpg',
+      location: 'Engineering Building Room 205',
+      isUpcoming: false,
+    },
+    {
+      title: 'Software Engineering Summit',
+      description:
+        'Annual summit bringing together students, faculty, and industry professionals to discuss the future of software engineering.',
+      date: new Date('2024-08-25T15:00:00Z'),
+      imageUrl: '/images/latest-events/ithink-hackathon.jpg',
+      location: 'CPU Auditorium',
+      isUpcoming: false,
     },
   ];
 

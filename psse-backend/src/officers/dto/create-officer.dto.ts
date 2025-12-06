@@ -14,8 +14,8 @@ export class CreateOfficerDto {
   category: string;
 
   @IsString()
-  @IsNotEmpty()
-  photoUrl: string;
+  @IsOptional()
+  photoUrl?: string;
 
   @IsString()
   @IsNotEmpty()

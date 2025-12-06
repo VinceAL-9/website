@@ -29,7 +29,7 @@ import { OrdersModule } from './orders';
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 seconds
-        limit: 10,
+        limit: 100, // Increased for development
       },
     ]),
     PrismaModule,

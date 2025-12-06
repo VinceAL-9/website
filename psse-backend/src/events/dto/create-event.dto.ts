@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsDateString, IsBoolean, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateEventDto {
   @IsString()
@@ -17,9 +18,14 @@ export class CreateEventDto {
   location: string;
 
   @IsString()
-  @IsNotEmpty()
-  imageUrl: string;
+  @IsOptional()
+  imageUrl?: string;
 
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
   @IsBoolean()
   @IsOptional()
   isUpcoming?: boolean;

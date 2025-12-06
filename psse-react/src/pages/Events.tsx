@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FaCalendarCheck, FaGraduationCap, FaSpinner } from 'react-icons/fa';
+import { FaCalendarCheck, FaGraduationCap, FaSpinner, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
-import { Card, CardBody, Button, Modal } from '../components/common';
+import { Card, CardBody, Button, Modal, Badge } from '../components/common';
 import { EventCard } from '../components/features';
 import { eventsApi } from '../services/api';
 import { useScrollAnimationList } from '../hooks';
@@ -40,7 +40,7 @@ function mapApiEventToEvent(apiEvent: ApiEvent): Event {
     date: new Date(apiEvent.date).toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long',
-      day: apiEvent.isUpcoming ? 'numeric' : undefined 
+      day: 'numeric'
     }),
     badge: getBadge(apiEvent),
     stats: apiEvent.location || '',
@@ -50,6 +50,7 @@ function mapApiEventToEvent(apiEvent: ApiEvent): Event {
 
 export const Events = () => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +132,7 @@ export const Events = () => {
                   className={`transition-all duration-500 ${
                     visibleEvents.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                   }`}
+                  onClick={() => setSelectedEvent(event)}
                 >
                   <EventCard event={event} />
                 </div>
@@ -154,33 +156,18 @@ export const Events = () => {
               <p className="text-gray-600">No upcoming events at this time. Check back soon!</p>
             </div>
           ) : (
-            <div ref={upcomingRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div ref={upcomingRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {upcomingEvents.map((event, index) => (
-                <Card
+                <div
                   key={event.id}
-                  className={`transition-all duration-500 ${
-                    visibleUpcoming.has(index)
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-8'
-                  }`}
+                  className="transition-all duration-500 opacity-100 translate-y-0"
+                  style={{
+                    animation: visibleUpcoming.has(index) ? `fadeInUp 0.5s ease-out ${index * 0.1}s both` : 'none'
+                  }}
+                  onClick={() => setSelectedEvent(event)}
                 >
-                  <CardBody>
-                    <div className="flex items-start gap-4">
-                      <div className="shrink-0">
-                        {index === 0 ? (
-                          <FaCalendarCheck className="w-10 h-10 text-psse-accent" />
-                        ) : (
-                          <FaGraduationCap className="w-10 h-10 text-green-500" />
-                        )}
-                      </div>
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-1">{event.title}</h5>
-                        <p className="text-gray-600 text-sm mb-2">{event.description}</p>
-                        <span className="text-sm text-gray-500">{event.date}</span>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
+                  <EventCard event={event} />
+                </div>
               ))}
             </div>
           )}
@@ -201,6 +188,57 @@ export const Events = () => {
           </Button>
         </div>
       </section>
+
+      {/* Event Details Modal */}
+      {selectedEvent && (
+        <Modal
+          isOpen={!!selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          title={selectedEvent.title}
+          size="lg"
+        >
+          <div className="space-y-4">
+            {/* Event Image */}
+            <div className="w-full h-64 rounded-lg overflow-hidden">
+              <img
+                src={selectedEvent.image}
+                alt={selectedEvent.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = '/images/placeholder-image.jpg';
+                }}
+              />
+            </div>
+
+            {/* Event Badge */}
+            <Badge variant={selectedEvent.badge.variant}>
+              {selectedEvent.badge.text}
+            </Badge>
+
+            {/* Event Details */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-gray-600">
+                <FaCalendarAlt className="text-psse-accent" />
+                <span className="font-medium">Date:</span>
+                <span>{selectedEvent.date}</span>
+              </div>
+
+              <div className="flex items-start gap-2 text-gray-600">
+                <FaMapMarkerAlt className="text-psse-accent mt-1" />
+                <div>
+                  <span className="font-medium">Venue:</span>
+                  <p className="text-gray-700">{selectedEvent.stats}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
+                <p className="text-gray-600 leading-relaxed">{selectedEvent.description}</p>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Join Modal */}
       <Modal

@@ -11,6 +11,7 @@ import {
   FaUsers,
   FaSpinner,
   FaArrowRight,
+  FaMapMarkerAlt,
 } from 'react-icons/fa';
 import { PageLayout } from '../components/layout';
 import { Button, Card, CardBody, Badge, Modal } from '../components/common';
@@ -76,6 +77,7 @@ function mapApiEventToEvent(apiEvent: ApiEvent): Event {
 
 export const Home = () => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState<string | null>(null);
@@ -259,9 +261,11 @@ export const Home = () => {
                 {upcomingEvents.map((event, index) => (
                   <div
                     key={event.id}
-                    className={`transition-all duration-500 ${
-                      visibleEvents.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                    }`}
+                    className="transition-all duration-500 opacity-100 translate-y-0"
+                    style={{
+                      animation: visibleEvents.has(index) ? `fadeInUp 0.5s ease-out ${index * 0.1}s both` : 'none'
+                    }}
+                    onClick={() => setSelectedEvent(event)}
                   >
                     <EventCard event={event} />
                   </div>
@@ -309,6 +313,57 @@ export const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Event Details Modal */}
+      {selectedEvent && (
+        <Modal
+          isOpen={!!selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          title={selectedEvent.title}
+          size="lg"
+        >
+          <div className="space-y-4">
+            {/* Event Image */}
+            <div className="w-full h-64 rounded-lg overflow-hidden">
+              <img
+                src={selectedEvent.image}
+                alt={selectedEvent.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = '/images/placeholder-image.jpg';
+                }}
+              />
+            </div>
+
+            {/* Event Badge */}
+            <Badge variant={selectedEvent.badge.variant}>
+              {selectedEvent.badge.text}
+            </Badge>
+
+            {/* Event Details */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-gray-600">
+                <FaCalendarAlt className="text-psse-accent" />
+                <span className="font-medium">Date:</span>
+                <span>{selectedEvent.date}</span>
+              </div>
+
+              <div className="flex items-start gap-2 text-gray-600">
+                <FaMapMarkerAlt className="text-psse-accent mt-1" />
+                <div>
+                  <span className="font-medium">Venue:</span>
+                  <p className="text-gray-700">{selectedEvent.stats}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
+                <p className="text-gray-600 leading-relaxed">{selectedEvent.description}</p>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Join Us Modal */}
       <Modal
