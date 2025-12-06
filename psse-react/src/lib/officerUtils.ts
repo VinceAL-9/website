@@ -5,59 +5,58 @@ import type { OfficerCategory, OfficerCategoryInfo } from '../types';
  * Officer category metadata with hierarchy order
  */
 export const officerCategories: Record<OfficerCategory, OfficerCategoryInfo> = {
-  executive: {
+  exec: {
     title: 'Executive Board',
     description: 'The primary leadership team responsible for strategic direction and overall governance',
   },
-  administrative: {
+  admin: {
     title: 'Administrative Officers',
-    description: 'Officers responsible for documentation, financial management, and organizational operations',
+    description: 'Officers responsible for documentation and organizational operations',
   },
-  audit: {
-    title: 'Audit & Finance',
-    description: 'Officers ensuring financial transparency and business development',
+  finance: {
+    title: 'Finance Officers',
+    description: 'Officers ensuring financial transparency, business development, and treasury management',
   },
-  communications: {
-    title: 'Communications & Representation',
-    description: 'Officers managing communications, public relations, and student representation',
+  rep: {
+    title: 'Year Level Representatives',
+    description: 'Student representatives for each year level ensuring effective communication between members and leadership',
+  },
+  ambassador: {
+    title: 'PSSE Ambassadors',
+    description: 'Official ambassadors representing PSSE in external events and partnerships',
   },
 };
 
 /**
  * Defines the hierarchy order for officer categories
- * Per SRS: Executive > Administrative > Audit > Communications
+ * Per database schema: EXEC > ADMIN > FINANCE > REP > AMBASSADOR
  */
-export const categoryOrder: OfficerCategory[] = ['executive', 'administrative', 'audit', 'communications'];
+export const categoryOrder: OfficerCategory[] = ['exec', 'admin', 'finance', 'rep', 'ambassador'];
 
 /**
- * Maps various category formats from the database to the normalized frontend categories.
- * This handles both seed data categories and new categories from the Dashboard.
+ * Maps database category values to the normalized frontend categories.
+ * Database uses: EXEC, ADMIN, REP, FINANCE, AMBASSADOR
  */
 function normalizeCategory(rawCategory: string): OfficerCategory {
-  const category = rawCategory.toLowerCase().trim();
+  const category = rawCategory.toUpperCase().trim();
 
-  // Direct matches (from Dashboard form with lowercase values)
-  if (category === 'executive' || category === 'administrative' || category === 'audit' || category === 'communications') {
-    return category as OfficerCategory;
+  // Direct matches from database enum
+  switch (category) {
+    case 'EXEC':
+      return 'exec';
+    case 'ADMIN':
+      return 'admin';
+    case 'FINANCE':
+      return 'finance';
+    case 'REP':
+      return 'rep';
+    case 'AMBASSADOR':
+      return 'ambassador';
+    default:
+      // Default fallback - log for debugging
+      console.warn(`Unknown officer category: "${rawCategory}", defaulting to 'exec'`);
+      return 'exec';
   }
-
-  // Seed data mappings
-  if (category.includes('executive')) {
-    return 'executive';
-  }
-  if (category.includes('administrative') || category.includes('finance') || category.includes('treasurer')) {
-    return 'administrative';
-  }
-  if (category.includes('audit')) {
-    return 'audit';
-  }
-  if (category.includes('communications') || category.includes('representative') || category.includes('ambassador')) {
-    return 'communications';
-  }
-
-  // Default fallback - log for debugging
-  console.warn(`Unknown officer category: "${rawCategory}", defaulting to 'executive'`);
-  return 'executive';
 }
 
 /**

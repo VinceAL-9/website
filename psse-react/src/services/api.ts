@@ -315,5 +315,13 @@ export const authApi = {
     });
     return response.data;
   },
+
+  /**
+   * Resend verification email
+   */
+  resendVerification: async (email: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post('/auth/resend-verification', { email });
+    return response.data;
+  },
 };
 

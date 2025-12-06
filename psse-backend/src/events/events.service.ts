@@ -25,7 +25,7 @@ export class EventsService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const event = await this.prisma.event.findUnique({
       where: { id },
     });
@@ -50,7 +50,7 @@ export class EventsService {
     });
   }
 
-  async update(id: number, updateEventDto: UpdateEventDto) {
+  async update(id: string, updateEventDto: UpdateEventDto) {
     const existingEvent = await this.findOne(id);
 
     // If a new imageUrl is provided and it's different from the existing one,
@@ -73,7 +73,7 @@ export class EventsService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const event = await this.findOne(id);
 
     // Delete the image from Cloudinary before removing the event

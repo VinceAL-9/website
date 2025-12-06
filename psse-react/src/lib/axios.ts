@@ -14,7 +14,10 @@ const axiosInstance: AxiosInstance = axios.create({
 // Request interceptor to attach JWT token
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('access_token');
+    // Check for both admin and user tokens
+    const adminToken = localStorage.getItem('access_token');
+    const userToken = localStorage.getItem('user_access_token');
+    const token = adminToken || userToken;
     
     if (token && token !== 'undefined') {
       if (!config.headers) {
@@ -43,7 +46,7 @@ axiosInstance.interceptors.response.use(
     // Show error toast
     toast.error(errorMessage);
     
-    // Handle 401 Unauthorized - clear token and redirect to login
+    // Handle 401 Unauthorized - clear tokens but let the component handle redirect
     if (error.response?.status === 401) {
       console.error('401 Unauthorized error:', {
         url: error.config?.url,
@@ -52,8 +55,10 @@ axiosInstance.interceptors.response.use(
         message: errorMessage,
         hasAuthHeader: !!error.config?.headers?.Authorization,
       });
+      // Clear both tokens on 401
       localStorage.removeItem('access_token');
-      window.location.href = '/admin/login';
+      localStorage.removeItem('user_access_token');
+      // Don't redirect automatically - let the login component handle it
     }
     
     return Promise.reject(error);

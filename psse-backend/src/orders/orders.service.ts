@@ -8,21 +8,46 @@ export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Creates a new order with transactional logic to prevent overselling.
+   * Generates a human-readable reference ID for orders
+   * Format: ORD-YYYYMMDDHHMMSS-XXXX (where XXXX is 4 random alphanumeric chars)
+   * Example: ORD-20251206143022-A7K9
+   */
+  private generateReferenceId(): string {
+    const now = new Date();
+    const timestamp = now.toISOString()
+      .replace(/[-:T]/g, '')
+      .slice(0, 14); // YYYYMMDDHHmmss
+    
+    const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomSuffix = '';
+    for (let i = 0; i < 4; i++) {
+      randomSuffix += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+    }
+    
+    return `ORD-${timestamp}-${randomSuffix}`;
+  }
+
+  /**
+   * Creates a new order with atomic transactional logic to prevent overselling.
    *
-   * This method uses Prisma's interactive transaction to ensure:
-   * 1. Stock is checked and decremented atomically for each product
-   * 2. All order items are created within the same transaction
-   * 3. If any item fails (e.g., insufficient stock), the entire transaction rolls back
+   * This method uses Prisma's $transaction to ensure:
+   * 1. Stock is validated for each product
+   * 2. Stock is decremented atomically for each product
+   * 3. A unique human-readable referenceId is generated
+   * 4. Order and OrderItem records are created
+   * 5. If any step fails, the entire transaction rolls back
    */
   async create(createOrderDto: CreateOrderDto) {
     const { customerName, studentId, contactNumber, customerEmail, items } = createOrderDto;
 
-    // Use an interactive transaction to handle the complex order creation
+    // Generate unique reference ID for this order
+    const referenceId = this.generateReferenceId();
+
+    // Use an atomic transaction to handle the complex order creation
     return this.prisma.$transaction(async (tx) => {
-      // Array to store created order items data for the final order creation
+      // Array to store order items data for the final order creation
       const orderItemsData: {
-        productId: number;
+        productId: string;
         quantity: number;
         priceAtTime: Prisma.Decimal;
       }[] = [];
@@ -30,9 +55,9 @@ export class OrdersService {
       // Variable to accumulate the total order amount
       let totalAmount = new Prisma.Decimal(0);
 
-      // Step 1: Iterate through each item in the order
+      // Step 1: Iterate through each item to validate and process
       for (const item of items) {
-        // Step 2: Fetch the product to check availability and get current price
+        // Step 2: Fetch the product to check stock availability and get current price
         const product = await tx.product.findUnique({
           where: { id: item.productId },
         });
@@ -42,10 +67,10 @@ export class OrdersService {
           throw new NotFoundException(`Product with ID ${item.productId} not found`);
         }
 
-        // Step 3: Check if sufficient stock is available
+        // Step 3: Validate sufficient stock is available
         if (product.stock < item.quantity) {
           throw new BadRequestException(
-            `Insufficient stock for product "${product.name}". ` +
+            `Product "${product.name}" is out of stock. ` +
             `Available: ${product.stock}, Requested: ${item.quantity}`
           );
         }
@@ -72,9 +97,10 @@ export class OrdersService {
         });
       }
 
-      // Step 5: Create the parent Order record with all OrderItems connected
+      // Step 5: Create the Order with referenceId and all OrderItems
       const order = await tx.order.create({
         data: {
+          referenceId,
           customerName,
           studentId,
           contactNumber,
@@ -134,7 +160,7 @@ export class OrdersService {
   /**
    * Retrieves a single order by ID.
    */
-  async findOne(id: number) {
+  async findOne(id: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
@@ -163,7 +189,7 @@ export class OrdersService {
   /**
    * Updates an order's status.
    */
-  async update(id: number, updateOrderDto: UpdateOrderDto) {
+  async update(id: string, updateOrderDto: UpdateOrderDto) {
     // Verify the order exists
     const existingOrder = await this.prisma.order.findUnique({
       where: { id },

@@ -6,7 +6,6 @@ import {
   Delete, 
   Body, 
   Param, 
-  ParseIntPipe, 
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -31,7 +30,7 @@ export class OfficersController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.officersService.findOne(id);
   }
 
@@ -75,7 +74,7 @@ export class OfficersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor('photo'))
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() updateOfficerDto: UpdateOfficerDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
@@ -105,7 +104,7 @@ export class OfficersController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.officersService.remove(id);
   }
 }

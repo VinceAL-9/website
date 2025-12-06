@@ -82,11 +82,6 @@ export const UserRegister = () => {
             });
 
             setIsSuccess(true);
-
-            // Redirect to login after 2 seconds
-            setTimeout(() => {
-                navigate('/user/login');
-            }, 2000);
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message || 'Registration failed. Please try again.');
@@ -122,13 +117,39 @@ export const UserRegister = () => {
         return (
             <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-psse-primary to-psse-dark">
                 <div className="w-full max-w-md px-6">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
-                        <div className="mb-6">
-                            <FaCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+                    <div className="bg-white rounded-2xl shadow-2xl p-8">
+                        <div className="text-center mb-6">
+                            <FaCheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+                            <h1 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h1>
                         </div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h1>
-                        <p className="text-gray-600 mb-4">Your account has been created successfully.</p>
-                        <p className="text-sm text-gray-500">Redirecting to login...</p>
+                        
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <h2 className="text-blue-900 font-semibold mb-2 flex items-center gap-2">
+                                <FaEnvelope className="h-5 w-5" />
+                                Check Your Email
+                            </h2>
+                            <p className="text-blue-800 text-sm mb-2">
+                                We've sent a verification link to:
+                            </p>
+                            <p className="text-blue-900 font-medium text-sm mb-3">
+                                {formData.email}
+                            </p>
+                            <p className="text-blue-700 text-sm">
+                                Click the link in the email to verify your account before logging in.
+                            </p>
+                        </div>
+
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => navigate('/user/login')}
+                                className="w-full bg-psse-accent hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200"
+                            >
+                                Go to Login
+                            </button>
+                            <p className="text-center text-sm text-gray-500">
+                                Didn't receive the email? Check your spam folder.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

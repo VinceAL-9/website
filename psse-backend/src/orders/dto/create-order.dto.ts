@@ -11,9 +11,9 @@ import {
 import { Type } from 'class-transformer';
 
 export class OrderItemDto {
-  @IsInt()
-  @Min(1)
-  productId: number;
+  @IsString()
+  @IsNotEmpty()
+  productId: string;
 
   @IsInt()
   @Min(1)

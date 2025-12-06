@@ -69,4 +69,15 @@ export class AuthController {
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
   }
+
+  /**
+   * POST /auth/resend-verification
+   * Resends the verification email to the user.
+   * This endpoint is public (no authentication required).
+   */
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(@Body('email') email: string) {
+    return this.authService.resendVerificationEmail(email);
+  }
 }

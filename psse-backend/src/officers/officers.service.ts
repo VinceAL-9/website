@@ -14,7 +14,7 @@ export class OfficersService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const officer = await this.prisma.officer.findUnique({
       where: { id },
     });
@@ -39,7 +39,7 @@ export class OfficersService {
     });
   }
 
-  async update(id: number, updateOfficerDto: UpdateOfficerDto) {
+  async update(id: string, updateOfficerDto: UpdateOfficerDto) {
     await this.findOne(id);
 
     return this.prisma.officer.update({
@@ -48,7 +48,7 @@ export class OfficersService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     await this.findOne(id);
 
     return this.prisma.officer.delete({

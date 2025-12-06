@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { OrderProvider, UserAuthProvider } from './context';
-import { Home, About, Events, Merchandise, AdminLogin, AdminRegister, AdminDashboard, UserLogin, UserRegister } from './pages';
+import { Home, About, Events, Merchandise, AdminLogin, AdminRegister, AdminDashboard, UserLogin, UserRegister, VerifyEmail } from './pages';
 import { ProtectedRoute } from './components/common';
 
 function App() {
@@ -19,6 +19,7 @@ function App() {
             {/* User Routes */}
             <Route path="/user/login" element={<UserLogin />} />
             <Route path="/user/register" element={<UserRegister />} />
+            <Route path="/user/verify" element={<VerifyEmail />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />

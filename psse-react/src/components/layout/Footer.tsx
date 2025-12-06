@@ -18,27 +18,27 @@ export const Footer = () => {
 
   return (
     <footer className="bg-psse-dark text-white py-12 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
           {/* Organization Info */}
-          <div>
+          <div className="text-center md:text-left">
             <h5 className="text-lg font-semibold mb-3 text-white">
               Philippine Society of Software Engineers
             </h5>
-            <p className="text-gray-400">
+            <p className="text-gray-400 leading-relaxed">
               Shaping the next disruptors in software innovation since 2019.
             </p>
           </div>
 
           {/* Social Links */}
-          <div>
+          <div className="text-center md:text-right">
             <h5 className="text-lg font-semibold mb-3 text-white">Connect With Us</h5>
-            <div className="flex gap-4">
+            <div className="flex gap-4 justify-center md:justify-end">
               {socialLinks.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
-                  className="text-gray-400 hover:text-psse-accent transition-colors duration-200"
+                  className="text-gray-400 hover:text-psse-accent transition-colors duration-200 hover:scale-110 transform"
                   aria-label={link.label}
                 >
                   {link.icon}

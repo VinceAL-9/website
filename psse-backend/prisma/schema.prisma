@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id                Int      @id @default(autoincrement())
+  id                String   @id @default(uuid())
   email             String   @unique
   password          String
   name              String?
@@ -22,7 +22,7 @@ model User {
 }
 
 model Officer {
-  id           Int             @id @default(autoincrement())
+  id           String          @id @default(uuid())
   name         String
   position     String
   category     OfficerCategory
@@ -34,7 +34,7 @@ model Officer {
 }
 
 model Event {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(uuid())
   title       String
   description String
   date        DateTime
@@ -46,7 +46,7 @@ model Event {
 }
 
 model Product {
-  id          Int         @id @default(autoincrement())
+  id          String      @id @default(uuid())
   name        String
   description String
   price       Decimal     @db.Decimal(10, 2)
@@ -60,24 +60,26 @@ model Product {
 }
 
 model Order {
-  id            Int         @id @default(autoincrement())
-  customerName  String
-  studentId     String
-  contactNumber String
-  customerEmail String
-  totalAmount   Decimal     @db.Decimal(10, 2)
-  status        OrderStatus @default(PENDING_REVIEW)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  orderItems    OrderItem[]
+  id              String      @id @default(uuid())
+  referenceId     String      @unique
+  customerName    String
+  studentId       String
+  contactNumber   String
+  customerEmail   String
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  status          OrderStatus @default(PENDING_REVIEW)
+  paymentProofUrl String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id          Int     @id @default(autoincrement())
-  orderId     Int
-  productId   Int
+  id          String  @id @default(uuid())
+  orderId     String
+  productId   String
   quantity    Int
   priceAtTime Decimal @db.Decimal(10, 2)
   order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)

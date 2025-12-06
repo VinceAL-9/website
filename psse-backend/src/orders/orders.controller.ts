@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
@@ -28,7 +28,7 @@ export class OrdersController {
    * GET /orders/:id - Retrieve a specific order by ID
    */
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
   }
 
@@ -37,7 +37,7 @@ export class OrdersController {
    */
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateOrderDto: UpdateOrderDto) {
+  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }
 }

@@ -147,7 +147,7 @@ export const Events = () => {
 
       {/* Upcoming Events Section */}
       <section className="py-12 px-4 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Upcoming Events</h2>
 
           {loading ? (

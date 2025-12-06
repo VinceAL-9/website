@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Confirmation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f4f4f4;
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+    }
+    .header {
+      background-color: #007bff;
+      color: white;
+      padding: 20px;
+      border-radius: 10px 10px 0 0;
+      margin: -30px -30px 20px -30px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome to PSSE!</h1>
+    </div>
+    <div class="content">
+      <p>Hi {{name}},</p>
+      <p>Thank you for registering with PSSE! We're excited to have you on board.</p>
+      <p>To complete your registration, please confirm your email address by clicking the button below:</p>
+      <a href="{{url}}" class="button">Confirm Email</a>
+      <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
+      <p style="word-break: break-all; color: #007bff;">{{url}}</p>
+      <p>This link will expire in 24 hours for security reasons.</p>
+      <p>If you didn't create an account with PSSE, please ignore this email.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 PSSE. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

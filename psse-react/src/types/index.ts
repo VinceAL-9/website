@@ -11,10 +11,11 @@ export interface Officer {
 }
 
 export type OfficerCategory = 
-  | 'executive'
-  | 'administrative'
-  | 'audit'
-  | 'communications';
+  | 'exec'
+  | 'admin'
+  | 'finance'
+  | 'rep'
+  | 'ambassador';
 
 export interface OfficerCategoryInfo {
   title: string;

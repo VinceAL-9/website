@@ -120,12 +120,17 @@ export const About = () => {
                   </div>
 
                   <div
-                    className={`grid gap-4 ${group.category === 'executive'
-                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
-                        : group.category === 'administrative'
-                          ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7'
-                          : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
-                      }`}
+                    className={`grid gap-4 ${
+                      group.category === 'exec'
+                        ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
+                        : group.category === 'admin'
+                          ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+                          : group.category === 'finance'
+                            ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
+                            : group.category === 'rep'
+                              ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-4'
+                              : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-2'
+                    }`}
                   >
                     {group.officers.map((apiOfficer, officerIndex) => {
                       const officer = mapApiOfficerToOfficer(apiOfficer);

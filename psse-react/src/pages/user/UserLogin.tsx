@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
 import { useUserAuth } from '../../context';
+import { authApi } from '../../services/api';
 
 export const UserLogin = () => {
     const navigate = useNavigate();
@@ -10,6 +11,9 @@ export const UserLogin = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isResending, setIsResending] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
+    const [needsVerification, setNeedsVerification] = useState(false);
 
     // Redirect to home if already logged in
     useEffect(() => {
@@ -18,9 +22,35 @@ export const UserLogin = () => {
         }
     }, [authLoading, isAuthenticated, navigate]);
 
+    const handleResendVerification = async () => {
+        if (!email) {
+            setError('Please enter your email address first');
+            return;
+        }
+
+        setIsResending(true);
+        setResendSuccess(false);
+        setError(null);
+
+        try {
+            await authApi.resendVerification(email);
+            setResendSuccess(true);
+            setNeedsVerification(false);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('Failed to resend verification email');
+            }
+        } finally {
+            setIsResending(false);
+        }
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError(null);
+        setResendSuccess(false);
         setIsLoading(true);
 
         try {
@@ -28,7 +58,12 @@ export const UserLogin = () => {
             navigate('/');
         } catch (err: unknown) {
             if (err instanceof Error) {
-                setError(err.message || 'Invalid credentials. Please try again.');
+                const errorMsg = err.message || 'Invalid credentials. Please try again.';
+                setError(errorMsg);
+                // Check if error is about email verification
+                if (errorMsg.toLowerCase().includes('verify')) {
+                    setNeedsVerification(true);
+                }
             } else {
                 setError('Invalid credentials. Please try again.');
             }
@@ -55,10 +90,35 @@ export const UserLogin = () => {
                         <p className="text-gray-600 mt-2">Sign in to access exclusive features</p>
                     </div>
 
+                    {/* Success Message */}
+                    {resendSuccess && (
+                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-green-600 text-sm font-medium">Verification email sent!</p>
+                            <p className="text-green-500 text-xs mt-1">
+                                Please check your inbox (and spam folder) for the verification link.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Error Message */}
                     {error && (
                         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-red-600 text-sm">{error}</p>
+                            <p className="text-red-600 text-sm font-medium mb-1">{error}</p>
+                            {needsVerification && (
+                                <div className="mt-3">
+                                    <p className="text-red-500 text-xs mb-2">
+                                        Please check your email inbox (and spam folder) for the verification link.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={handleResendVerification}
+                                        disabled={isResending}
+                                        className="text-psse-accent hover:text-blue-600 text-sm font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isResending ? 'Sending...' : 'Resend Verification Email'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 

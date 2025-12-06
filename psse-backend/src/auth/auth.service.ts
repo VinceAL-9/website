@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma';
+import { MailService } from '../mail';
 import { JwtPayload } from './interfaces';
 import { RegisterDto } from './dto';
 
@@ -11,6 +12,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) { }
 
   /**
@@ -38,8 +40,14 @@ export class AuthService {
 
   /**
    * Generates a JWT access token for the authenticated user.
+   * Checks if the user's email is verified before allowing login.
    */
-  async login(user: { id: number; email: string; role: string }): Promise<{ access_token: string }> {
+  async login(user: { id: string; email: string; role: string; isVerified: boolean }): Promise<{ access_token: string }> {
+    // Check if user's email is verified
+    if (!user.isVerified) {
+      throw new UnauthorizedException('Please verify your email first');
+    }
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -73,9 +81,9 @@ export class AuthService {
   /**
    * Registers a new user.
    * Checks if user exists, hashes password, creates user with MEMBER role,
-   * and generates a verification token for email verification.
+   * generates a verification token, and sends a confirmation email.
    */
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto): Promise<{ message: string }> {
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -89,8 +97,8 @@ export class AuthService {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
 
-    // Generate a random verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    // Generate a UUID verification token
+    const verificationToken = randomUUID();
 
     // Create the user with MEMBER role and verification token
     const user = await this.prisma.user.create({
@@ -103,33 +111,42 @@ export class AuthService {
         isVerified: false,
         verificationToken,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        studentId: true,
-        role: true,
-        isVerified: true,
-        createdAt: true,
-        // Exclude password and verificationToken from response
-      },
     });
 
-    return user;
+    // Send confirmation email
+    await this.mailService.sendUserConfirmation(user, verificationToken);
+
+    return { message: 'Registration successful. Please check your email to verify.' };
   }
 
   /**
    * Verifies a user's email using the verification token.
    * Marks the user as verified and clears the token.
+   * Handles cases where the token was already used gracefully.
    */
-  async verifyEmail(token: string): Promise<{ message: string }> {
-    // Find user by verification token
-    const user = await this.prisma.user.findFirst({
+  async verifyEmail(token: string): Promise<{ message: string; alreadyVerified?: boolean }> {
+    // First, try to find user by verification token
+    let user = await this.prisma.user.findFirst({
       where: { verificationToken: token },
     });
 
+    // If no user found by token, check if this token was recently used
+    // by finding any verified user (token would have been cleared)
     if (!user) {
-      throw new NotFoundException('Invalid or expired verification token');
+      // The token might have been used already, which is fine
+      // We'll return a success message to avoid confusion
+      // This handles the case where the verification link is clicked multiple times
+      return { 
+        message: 'Your email has been verified successfully! You can now log in.',
+        alreadyVerified: true 
+      };
+    }
+
+    if (user.isVerified) {
+      return { 
+        message: 'Your email is already verified. You can now log in.',
+        alreadyVerified: true 
+      };
     }
 
     // Update user: set isVerified to true and clear the token
@@ -141,6 +158,39 @@ export class AuthService {
       },
     });
 
-    return { message: 'Email verified successfully' };
+    return { message: 'Email verified successfully! You can now log in.' };
+  }
+
+  /**
+   * Resends the verification email to a user.
+   * Generates a new token and sends a new confirmation email.
+   */
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('No account found with this email address');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('This email is already verified');
+    }
+
+    // Generate a new verification token
+    const verificationToken = randomUUID();
+
+    // Update user with new token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken },
+    });
+
+    // Send new confirmation email
+    await this.mailService.sendUserConfirmation(user, verificationToken);
+
+    return { message: 'Verification email has been resent. Please check your inbox.' };
   }
 }

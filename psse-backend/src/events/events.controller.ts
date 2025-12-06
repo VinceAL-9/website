@@ -6,7 +6,6 @@ import {
   Delete, 
   Body, 
   Param, 
-  ParseIntPipe, 
   Query,
   UseGuards,
   UseInterceptors,
@@ -34,7 +33,7 @@ export class EventsController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.eventsService.findOne(id);
   }
 
@@ -72,7 +71,7 @@ export class EventsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor('image'))
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() updateEventDto: UpdateEventDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
@@ -96,7 +95,7 @@ export class EventsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.eventsService.remove(id);
   }
 }
