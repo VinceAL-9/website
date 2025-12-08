@@ -1315,5 +1315,4 @@ Key achievements:
 ---
 
 **Last Updated:** December 6, 2025  
-**Author:** PSSE Development Team  
 **Version:** 1.0.0

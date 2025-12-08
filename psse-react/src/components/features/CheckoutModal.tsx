@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { FaShoppingCart, FaTrash, FaMinus, FaPlus, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaShoppingCart, FaTrash, FaMinus, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { toast } from 'sonner';
 import { Modal, Button } from '../common';
-import { useOrders } from '../../context';
+import { useOrders, useUserAuth } from '../../context';
 import { ordersApi } from '../../services';
 import type { CreateOrderDto } from '../../types';
 
@@ -17,7 +19,7 @@ interface CheckoutFormData {
   contactNumber: string;
 }
 
-type CheckoutStep = 'cart' | 'form' | 'success' | 'error';
+type CheckoutStep = 'cart' | 'form' | 'error';
 
 export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
   const {
@@ -29,6 +31,9 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     getCartTotal,
   } = useOrders();
 
+  const { user } = useUserAuth();
+  const navigate = useNavigate();
+
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [formData, setFormData] = useState<CheckoutFormData>({
     customerName: '',
@@ -37,8 +42,20 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     contactNumber: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderReferenceId, setOrderReferenceId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Task D: Pre-fill form data from user profile when modal opens or user changes
+  useEffect(() => {
+    if (isOpen && user) {
+      setFormData((prev) => ({
+        ...prev,
+        customerName: user.name || '',
+        studentId: user.studentId || '',
+        customerEmail: user.email || '',
+        // contactNumber is not in user profile, keep it editable
+      }));
+    }
+  }, [isOpen, user]);
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -94,12 +111,13 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
         })),
       };
 
-      const response = await ordersApi.createOrder(orderPayload);
+      await ordersApi.createOrder(orderPayload);
 
-      // Success - store the order reference ID
-      setOrderReferenceId(response.id.toString());
+      // Task C: Success - clear cart, close modal, navigate, and show toast
       clearCart();
-      setStep('success');
+      onClose();
+      toast.success('Order placed! Please upload your payment proof.');
+      navigate('/user/transactions');
     } catch (error: unknown) {
       // Handle error response
       let message = 'An error occurred while placing your order. Please try again.';
@@ -122,9 +140,15 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     }
   };
 
-  const handleClose = () => {
-    // Reset state when closing
-    if (step === 'success') {
+  const resetFormForUser = () => {
+    if (user) {
+      setFormData({
+        customerName: user.name || '',
+        studentId: user.studentId || '',
+        customerEmail: user.email || '',
+        contactNumber: '',
+      });
+    } else {
       setFormData({
         customerName: '',
         studentId: '',
@@ -132,9 +156,13 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
         contactNumber: '',
       });
     }
+  };
+
+  const handleClose = () => {
+    // Reset state when closing
+    resetFormForUser();
     setStep('cart');
     setErrorMessage('');
-    setOrderReferenceId('');
     onClose();
   };
 
@@ -270,7 +298,8 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
               name="customerName"
               value={formData.customerName}
               onChange={handleFormChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              readOnly={!!user}
+              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               required
             />
           </div>
@@ -283,7 +312,8 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
               name="studentId"
               value={formData.studentId}
               onChange={handleFormChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              readOnly={!!user}
+              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               required
             />
           </div>
@@ -299,7 +329,8 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
               name="customerEmail"
               value={formData.customerEmail}
               onChange={handleFormChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+              readOnly={!!user}
+              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               required
             />
           </div>
@@ -331,27 +362,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     </form>
   );
 
-  const renderSuccessStep = () => (
-    <div className="text-center py-8">
-      <FaCheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-      <h4 className="text-2xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h4>
-      <p className="text-gray-600 mb-4">Thank you for your order.</p>
-
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-        <p className="text-sm text-green-700 mb-1">Your Order Reference ID:</p>
-        <p className="text-2xl font-bold text-green-800">ORD-{orderReferenceId}</p>
-      </div>
-
-      <p className="text-sm text-gray-500 mb-6">
-        Please save this reference ID. You will receive a confirmation email shortly.
-        Payment will be collected upon pickup at the PSSE office.
-      </p>
-
-      <Button variant="primary" onClick={handleClose}>
-        Continue Shopping
-      </Button>
-    </div>
-  );
+  // Note: renderSuccessStep removed - we now redirect to /user/transactions on success
 
   const renderErrorStep = () => (
     <div className="text-center py-8">
@@ -379,8 +390,6 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
         return 'Shopping Cart';
       case 'form':
         return 'Checkout';
-      case 'success':
-        return 'Order Confirmed';
       case 'error':
         return 'Order Error';
       default:
@@ -392,7 +401,6 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     <Modal isOpen={isOpen} onClose={handleClose} title={getTitle()} size="lg">
       {step === 'cart' && renderCartStep()}
       {step === 'form' && renderFormStep()}
-      {step === 'success' && renderSuccessStep()}
       {step === 'error' && renderErrorStep()}
     </Modal>
   );

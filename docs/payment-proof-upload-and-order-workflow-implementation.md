@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document details the implementation of payment proof upload functionality and enhanced order workflow management for the PSSE merchandise ordering system. The implementation includes a complete file upload system using Cloudinary, improved order status management with stock control, and comprehensive UI enhancements for both user and admin interfaces. These changes enable users to submit GCash payment screenshots, admins to review submissions, and ensure proper inventory management through transactional stock operations.
+This document details the implementation of payment proof upload functionality, enhanced order workflow management, and user experience improvements for the PSSE merchandise ordering system. The implementation includes a complete file upload system using Cloudinary, improved order status management with stock control, user order cancellation capability, checkout form pre-filling from user profiles, seamless post-checkout navigation, and comprehensive UI enhancements for both user and admin interfaces. These changes enable users to submit GCash payment screenshots, admins to review submissions, and ensure proper inventory management through transactional stock operations.
 
 ---
 
@@ -28,12 +28,13 @@ This document details the implementation of payment proof upload functionality a
 1. [Database Schema Considerations](#database-schema-considerations)
 2. [Backend Implementation](#backend-implementation)
 3. [Frontend Implementation](#frontend-implementation)
-4. [API Endpoints](#api-endpoints)
-5. [Order Workflow](#order-workflow)
-6. [Stock Management](#stock-management)
-7. [Security Considerations](#security-considerations)
-8. [Testing](#testing)
-9. [Future Enhancements](#future-enhancements)
+4. [Checkout Modal UX Improvements](#checkout-modal-ux-improvements)
+5. [API Endpoints](#api-endpoints)
+6. [Order Workflow](#order-workflow)
+7. [Stock Management](#stock-management)
+8. [Security Considerations](#security-considerations)
+9. [Testing](#testing)
+10. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -897,6 +898,297 @@ import {
 
 ---
 
+## Checkout Modal UX Improvements
+
+### 1. Profile Pre-filling (Task D)
+
+**File:** `psse-react/src/components/features/CheckoutModal.tsx`
+
+When a logged-in user opens the checkout modal, their profile data is automatically pre-filled into the form fields:
+
+**Implementation:**
+
+```typescript
+import { useUserAuth } from '../../context';
+
+// Inside component
+const { user } = useUserAuth();
+
+// Pre-fill form data when modal opens or user changes
+useEffect(() => {
+  if (isOpen && user) {
+    setFormData((prev) => ({
+      ...prev,
+      customerName: user.name || '',
+      studentId: user.studentId || '',
+      customerEmail: user.email || '',
+      // contactNumber is not in user profile, keep it editable
+    }));
+  }
+}, [isOpen, user]);
+```
+
+**Read-Only Fields:**
+
+Profile fields are set to `readOnly` for authenticated users to ensure data consistency:
+
+```tsx
+<input
+  type="text"
+  name="customerName"
+  value={formData.customerName}
+  onChange={handleFormChange}
+  readOnly={!!user}
+  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+  required
+/>
+```
+
+**Key Design Decisions:**
+- `customerName`, `studentId`, and `customerEmail` are pre-filled from user profile
+- `contactNumber` remains editable (not stored in user profile)
+- Visual styling (gray background) indicates read-only state
+- Prevents accidental data mismatch between order and user account
+
+---
+
+### 2. Post-Checkout Redirect (Task C)
+
+**Problem:** Previously, after order placement, users saw a success modal and had to manually close it and navigate to their transactions.
+
+**Solution:** Immediately redirect users to the Transaction History page with a toast notification:
+
+**Implementation:**
+
+```typescript
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+// Inside component
+const navigate = useNavigate();
+
+const handleSubmitOrder = async (e: React.FormEvent) => {
+  // ... validation and API call ...
+  
+  try {
+    await ordersApi.createOrder(orderPayload);
+
+    // Success - clear cart, close modal, navigate, and show toast
+    clearCart();
+    onClose();
+    toast.success('Order placed! Please upload your payment proof.');
+    navigate('/user/transactions');
+  } catch (error) {
+    // ... error handling ...
+  }
+};
+```
+
+**Benefits:**
+- Users immediately see their order in Transaction History
+- Clear call-to-action to upload payment proof via toast
+- Streamlined UX reduces steps to complete payment
+- Success state managed by page context, not modal state
+
+**Removed Code:**
+- `renderSuccessStep` function completely removed
+- `'success'` step removed from `CheckoutStep` type
+- `orderReferenceId` state removed (no longer needed)
+
+---
+
+## User Order Cancellation
+
+### 1. Overview
+
+Users can now cancel their own orders under specific conditions:
+- Order status is `AWAITING_PAYMENT`
+- No payment proof has been uploaded yet
+
+This prevents users from cancelling orders after they've submitted payment proof (which would require admin review).
+
+---
+
+### 2. Backend Implementation
+
+**File:** `psse-backend/src/orders/orders.controller.ts`
+
+New endpoint for user order cancellation:
+
+```typescript
+/**
+ * PATCH /orders/:id/cancel - Allow user to cancel their own order
+ * Only allowed when no payment proof has been uploaded
+ * Protected by JWT authentication - verifies order ownership
+ */
+@Patch(':id/cancel')
+@UseGuards(JwtAuthGuard)
+async cancelOrder(
+  @Param('id') id: string,
+  @CurrentUser() user: { id: string },
+): Promise<Order> {
+  return this.ordersService.cancelOrderByUser(id, user.id);
+}
+```
+
+**File:** `psse-backend/src/orders/orders.service.ts`
+
+```typescript
+/**
+ * Cancels an order by the user who placed it.
+ * Only allowed when no payment proof has been uploaded yet.
+ */
+async cancelOrderByUser(orderId: string, userId: string): Promise<Order> {
+  const order = await this.prisma.order.findUnique({
+    where: { id: orderId },
+    include: { orderItems: true },
+  });
+
+  if (!order) {
+    throw new NotFoundException(`Order with ID ${orderId} not found`);
+  }
+
+  // Verify the user owns this order
+  if (order.userId !== userId) {
+    throw new ForbiddenException('You can only cancel your own orders');
+  }
+
+  // Check if order is in a cancellable state
+  if (order.status !== OrderStatus.AWAITING_PAYMENT) {
+    throw new BadRequestException(
+      'Order can only be cancelled when status is AWAITING_PAYMENT'
+    );
+  }
+
+  // Check if payment proof has been uploaded
+  if (order.paymentProofUrl) {
+    throw new BadRequestException(
+      'Cannot cancel order after payment proof has been uploaded. Please contact support.'
+    );
+  }
+
+  // Cancel the order
+  return this.prisma.order.update({
+    where: { id: orderId },
+    data: { status: OrderStatus.CANCELLED },
+    include: {
+      orderItems: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+              imageUrl: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+```
+
+---
+
+### 3. Frontend Implementation
+
+**File:** `psse-react/src/services/api.ts`
+
+```typescript
+/**
+ * Cancel an order (User)
+ * Only allowed when no payment proof has been uploaded yet
+ * Uses the dedicated cancel endpoint that verifies order ownership
+ */
+cancelOrder: async (orderId: string): Promise<ApiOrder> => {
+  const response = await axiosInstance.patch<ApiOrder>(`/orders/${orderId}/cancel`);
+  return response.data;
+},
+```
+
+**File:** `psse-react/src/pages/user/TransactionHistory.tsx`
+
+Added cancellation UI with confirmation dialog:
+
+```typescript
+// State for tracking order cancellation
+const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+const [cancelError, setCancelError] = useState<string | null>(null);
+const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null);
+
+/**
+ * Handle order cancellation
+ */
+const handleCancelOrder = async (orderId: string) => {
+  setCancellingOrderId(orderId);
+  setCancelError(null);
+  setShowCancelConfirm(null);
+
+  try {
+    await ordersApi.cancelOrder(orderId);
+    await fetchOrders(); // Refresh list
+  } catch (err) {
+    console.error('Failed to cancel order:', err);
+    setCancelError('Failed to cancel order. Please try again.');
+  } finally {
+    setCancellingOrderId(null);
+  }
+};
+```
+
+**UI Component:**
+
+```tsx
+{/* Cancel Order Section - Only shown when no payment proof uploaded */}
+{order.status === OrderStatus.AWAITING_PAYMENT && !order.paymentProofUrl && (
+  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+    {showCancelConfirm === order.id ? (
+      // Confirmation dialog
+      <div className="flex items-center gap-3 px-4 py-2 bg-red-500/20 rounded-lg border border-red-400/30">
+        <span className="text-sm text-white">
+          Are you sure you want to cancel this order?
+        </span>
+        <button
+          onClick={() => handleCancelOrder(order.id)}
+          disabled={cancellingOrderId === order.id}
+          className="px-3 py-1 bg-red-500 text-white text-sm font-medium rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+        >
+          {cancellingOrderId === order.id ? (
+            <FaSpinner className="animate-spin h-4 w-4" />
+          ) : (
+            'Yes, Cancel'
+          )}
+        </button>
+        <button
+          onClick={() => setShowCancelConfirm(null)}
+          className="px-3 py-1 bg-white/20 text-white text-sm font-medium rounded hover:bg-white/30 transition-colors"
+        >
+          No, Keep Order
+        </button>
+      </div>
+    ) : (
+      // Cancel button
+      <button
+        onClick={() => setShowCancelConfirm(order.id)}
+        className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-200 hover:text-white hover:bg-red-500/30 rounded-lg transition-all"
+      >
+        <FaTimesCircle className="h-4 w-4" />
+        <span>Cancel Order</span>
+      </button>
+    )}
+  </div>
+)}
+```
+
+**Key Features:**
+- Cancel button only visible when order has no payment proof
+- Two-step confirmation to prevent accidental cancellation
+- Loading state during cancellation
+- Error handling with user feedback
+
+---
+
 ## API Endpoints
 
 ### Payment Proof Upload
@@ -967,23 +1259,65 @@ import {
 
 ---
 
+### Cancel Order (User)
+
+**Endpoint:** `PATCH /orders/:id/cancel`
+
+**Authentication:** Required (JWT - User must own the order)
+
+**Request:** No body required
+
+**Response:** `200 OK`
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "referenceId": "ORD-20251208143022-A7K9",
+  "status": "CANCELLED",
+  "paymentProofUrl": null,
+  ...
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Order status is not `AWAITING_PAYMENT`
+- `400 Bad Request`: Payment proof has already been uploaded
+- `401 Unauthorized`: No JWT token or invalid token
+- `403 Forbidden`: User does not own this order
+- `404 Not Found`: Order does not exist
+
+**Business Rules:**
+- Only orders with status `AWAITING_PAYMENT` can be cancelled by users
+- Orders with uploaded payment proof cannot be cancelled (must contact admin)
+- Cancellation is immediate and final
+- Stock is NOT affected (was never decremented)
+
+---
+
 ## Order Workflow
 
 ### Complete Order Lifecycle
 
 ```
 1. ORDER CREATION (User)
+   ├─ User navigates from checkout to /user/transactions (automatic redirect)
    ├─ Status: AWAITING_PAYMENT
    ├─ Stock: Validated but NOT decremented
+   ├─ Toast notification: "Order placed! Please upload your payment proof."
    └─ Payment Proof: None
 
-2. PAYMENT PROOF UPLOAD (User)
+2. USER CANCELLATION (User - Optional, before payment proof upload)
+   ├─ User can cancel their order if no payment proof uploaded
+   ├─ Status: CANCELLED (Final)
+   └─ Stock: NOT affected
+
+3. PAYMENT PROOF UPLOAD (User)
    ├─ User uploads GCash screenshot
    ├─ Image stored in Cloudinary
    ├─ Order.paymentProofUrl updated
-   └─ Status remains: AWAITING_PAYMENT
+   ├─ Status remains: AWAITING_PAYMENT
+   └─ User can no longer cancel (must contact admin)
 
-3. ADMIN REVIEW (Admin)
+4. ADMIN REVIEW (Admin)
    ├─ Admin views payment proof
    ├─ Verifies payment validity
    └─ Decides next action:
@@ -991,20 +1325,20 @@ import {
       ├─ REJECT → Status: CANCELLED
       └─ REQUEST MORE INFO → Status: PENDING_REVIEW
 
-4. READY FOR PICKUP (Admin)
+5. READY FOR PICKUP (Admin)
    ├─ Status: READY_PICKUP
    ├─ Stock: Still NOT decremented
    └─ Customer notified to pickup
 
-5. ORDER COMPLETION (Admin)
+6. ORDER COMPLETION (Admin)
    ├─ Status: COMPLETED
    ├─ Stock: DECREMENTED (Transactional)
    ├─ Payment Proof: Deleted from Cloudinary
    └─ Final status (cannot be changed)
 
-6. ORDER CANCELLATION (Admin - at any time before completion)
+7. ORDER CANCELLATION (Admin - at any time before completion)
    ├─ Status: CANCELLED
-   ├─ Stock: NOT decremented (or restored if it was)
+   ├─ Stock: NOT decremented (was never committed)
    ├─ Payment Proof: Deleted from Cloudinary
    └─ Final status (cannot be changed)
 ```
@@ -1449,7 +1783,7 @@ async getAnalyticsSummary() {
 
 ## Conclusion
 
-This implementation provides a comprehensive payment proof upload system with robust order workflow management. Key achievements include:
+This implementation provides a comprehensive payment proof upload system with robust order workflow management and enhanced user experience. Key achievements include:
 
 1. ✅ **Secure File Upload**: JWT-protected endpoint with validation
 2. ✅ **Cloudinary Integration**: Reliable image hosting with automatic cleanup
@@ -1458,6 +1792,9 @@ This implementation provides a comprehensive payment proof upload system with ro
 5. ✅ **Admin Efficiency**: Visual payment proof review with status management
 6. ✅ **Final Status Protection**: Prevents accidental changes to completed orders
 7. ✅ **Type Safety**: Full TypeScript coverage across stack
+8. ✅ **Profile Pre-filling**: Authenticated users' data auto-populated in checkout form
+9. ✅ **Seamless Post-Checkout Navigation**: Automatic redirect to Transaction History
+10. ✅ **User Order Cancellation**: Self-service cancellation before payment proof upload
 
 The system is production-ready with room for future enhancements to further improve automation and user experience.
 
@@ -1472,6 +1809,16 @@ The system is production-ready with room for future enhancements to further impr
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Last Updated:** December 8, 2025  
 **Author:** PSSE Development Team
+
+### Changelog
+
+**Version 1.1 (December 8, 2025)**
+- Added Checkout Modal UX Improvements section (Profile Pre-filling & Post-Checkout Redirect)
+- Added User Order Cancellation section
+- Added Cancel Order API endpoint documentation
+- Updated Order Workflow lifecycle to include user cancellation step
+- Updated Conclusion to reflect new features
+

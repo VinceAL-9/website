@@ -1346,7 +1346,6 @@ The implementation maintains backward compatibility through careful migration st
 
 - **Backend Development:** VLAN Technologies, Inc.
 - **Frontend Development:** VLAN Technologies, Inc.
-- **Documentation:** AI Assistant
 - **Last Updated:** December 6, 2025
 
 ---
