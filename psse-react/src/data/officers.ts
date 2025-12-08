@@ -1,21 +1,25 @@
 import type { Officer, OfficerCategory, OfficerCategoryInfo } from '../types';
 
 export const officerCategories: Record<OfficerCategory, OfficerCategoryInfo> = {
-  executive: {
+  exec: {
     title: 'Executive Board',
     description: 'The primary leadership team responsible for strategic direction and overall governance',
   },
-  administrative: {
+  admin: {
     title: 'Administrative Officers',
     description: 'Officers responsible for documentation, financial management, and organizational operations',
   },
-  audit: {
-    title: 'Audit & Finance',
-    description: 'Officers ensuring financial transparency and business development',
+  finance: {
+    title: 'Finance Officers',
+    description: 'Officers ensuring financial transparency and treasury management',
   },
-  communications: {
-    title: 'Communications & Representation',
-    description: 'Officers managing communications, public relations, and student representation',
+  rep: {
+    title: 'Year Level Representatives',
+    description: 'Student representatives managing communications and student representation',
+  },
+  ambassador: {
+    title: 'PSSE Ambassadors',
+    description: 'Official ambassadors representing PSSE in external events',
   },
 };
 
@@ -25,141 +29,142 @@ export const officers: Officer[] = [
     id: 'exec-1',
     title: 'President',
     image: '/images/officers/pres.png',
-    category: 'executive',
+    category: 'exec',
   },
   {
     id: 'exec-2',
     title: 'Vice President (External)',
     image: '/images/officers/vp-external.png',
-    category: 'executive',
+    category: 'exec',
   },
   {
     id: 'exec-3',
     title: 'Vice President (Internal)',
     image: '/images/officers/vp-internal.png',
-    category: 'executive',
+    category: 'exec',
   },
   {
     id: 'exec-4',
     title: 'Vice President (Media)',
     image: '/images/officers/vp-media.png',
-    category: 'executive',
+    category: 'exec',
   },
   {
     id: 'exec-5',
     title: 'Vice President (Tech)',
     image: '/images/officers/vp-tech.png',
-    category: 'executive',
+    category: 'exec',
   },
   // Administrative Officers
   {
     id: 'admin-1',
     title: 'Secretary',
     image: '/images/officers/secretary.png',
-    category: 'administrative',
+    category: 'admin',
   },
   {
     id: 'admin-2',
     title: 'Assistant Secretary',
     image: '/images/officers/asst-secretary.png',
-    category: 'administrative',
+    category: 'admin',
   },
+  // Finance Officers
   {
-    id: 'admin-3',
+    id: 'finance-1',
     title: 'General Treasurer',
     image: '/images/officers/gen-treasurer.png',
-    category: 'administrative',
+    category: 'finance',
   },
   {
-    id: 'admin-4',
+    id: 'finance-2',
     title: '4th Year Treasurer',
     image: '/images/officers/fourth-treasurer.png',
-    category: 'administrative',
+    category: 'finance',
   },
   {
-    id: 'admin-5',
+    id: 'finance-3',
     title: '3rd Year Treasurer',
     image: '/images/officers/third-treasurer.png',
-    category: 'administrative',
+    category: 'finance',
   },
   {
-    id: 'admin-6',
+    id: 'finance-4',
     title: '2nd Year Treasurer',
     image: '/images/officers/second-treasurer.png',
-    category: 'administrative',
+    category: 'finance',
   },
   {
-    id: 'admin-7',
+    id: 'finance-5',
     title: '1st Year Treasurer',
     image: '/images/officers/first-treasurer.png',
-    category: 'administrative',
+    category: 'finance',
   },
-  // Audit & Finance
   {
-    id: 'audit-1',
+    id: 'finance-6',
     title: 'Auditor',
     image: '/images/officers/auditor.png',
-    category: 'audit',
+    category: 'finance',
   },
   {
-    id: 'audit-2',
+    id: 'finance-7',
     title: 'Assistant Auditor',
     image: '/images/officers/asst-auditor.png',
-    category: 'audit',
+    category: 'finance',
   },
   {
-    id: 'audit-3',
+    id: 'finance-8',
     title: 'Business Manager',
     image: '/images/officers/business-manager.png',
-    category: 'audit',
+    category: 'finance',
   },
   {
-    id: 'audit-4',
+    id: 'finance-9',
     title: 'Assistant Business Manager',
     image: '/images/officers/asst-business-manager.png',
-    category: 'audit',
+    category: 'finance',
   },
-  // Communications & Representation
+  // Representatives
   {
-    id: 'comm-1',
+    id: 'rep-1',
     title: 'Public Information Officer',
     image: '/images/officers/pio.png',
-    category: 'communications',
+    category: 'rep',
   },
   {
-    id: 'comm-2',
+    id: 'rep-2',
     title: '4th Year Representative',
     image: '/images/officers/fourth-rep.png',
-    category: 'communications',
+    category: 'rep',
   },
   {
-    id: 'comm-3',
+    id: 'rep-3',
     title: '3rd Year Representative',
     image: '/images/officers/third-rep.png',
-    category: 'communications',
+    category: 'rep',
   },
   {
-    id: 'comm-4',
+    id: 'rep-4',
     title: '2nd Year Representative',
     image: '/images/officers/second-rep.png',
-    category: 'communications',
+    category: 'rep',
   },
   {
-    id: 'comm-5',
+    id: 'rep-5',
     title: '1st Year Representative',
     image: '/images/officers/first-rep.png',
-    category: 'communications',
+    category: 'rep',
   },
+  // Ambassadors
   {
-    id: 'comm-6',
+    id: 'ambassador-1',
     title: 'Ambassador',
     image: '/images/officers/ambassador.png',
-    category: 'communications',
+    category: 'ambassador',
   },
   {
-    id: 'comm-7',
+    id: 'ambassador-2',
     title: 'Ambassadress',
     image: '/images/officers/ambassadress.png',
-    category: 'communications',
+    category: 'ambassador',
   },
 ];

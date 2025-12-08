@@ -10,6 +10,9 @@ import {
   FaTrash,
   FaSpinner,
   FaBox,
+  FaImage,
+  FaExternalLinkAlt,
+  FaExclamationCircle,
 } from 'react-icons/fa';
 import { eventsApi, ordersApi, officersApi, productsApi } from '../../services/api';
 import { useUserAuth } from '../../context';
@@ -776,6 +779,9 @@ export const Dashboard = () => {
                         Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Payment Proof
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
@@ -783,62 +789,117 @@ export const Dashboard = () => {
                   <tbody className="divide-y divide-gray-200">
                     {orders.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                           No orders found.
                         </td>
                       </tr>
                     ) : (
-                      orders.map((order) => (
-                        <tr key={order.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            #{order.id}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {order.customerName}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {order.customerEmail}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              ID: {order.studentId}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {order.orderItems?.length || 0} item(s)
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(order.totalAmount)}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {formatDate(order.createdAt)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              {updatingOrderId === order.id ? (
-                                <FaSpinner className="animate-spin text-psse-accent" />
+                      orders.map((order) => {
+                        // Check if order needs review (awaiting payment with proof uploaded)
+                        const needsReview = order.status === OrderStatus.AWAITING_PAYMENT && order.paymentProofUrl;
+
+                        return (
+                          <tr
+                            key={order.id}
+                            className={`hover:bg-gray-50 ${needsReview
+                              ? 'bg-amber-50 border-l-4 border-l-amber-500'
+                              : ''
+                              }`}
+                          >
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                              #{order.id}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {order.customerName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {order.customerEmail}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                ID: {order.studentId}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {order.orderItems?.length || 0} item(s)
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                              {formatCurrency(order.totalAmount)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {formatDate(order.createdAt)}
+                            </td>
+                            <td className="px-6 py-4">
+                              {order.paymentProofUrl ? (
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={order.paymentProofUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group relative"
+                                  >
+                                    <img
+                                      src={order.paymentProofUrl}
+                                      alt="Payment Proof"
+                                      className="w-10 h-10 object-cover rounded border border-gray-300 hover:border-psse-accent transition-colors"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded">
+                                      <FaExternalLinkAlt className="text-white text-xs" />
+                                    </div>
+                                  </a>
+                                  {needsReview && (
+                                    <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">
+                                      <FaExclamationCircle className="text-amber-600" />
+                                      Review
+                                    </span>
+                                  )}
+                                </div>
                               ) : (
-                                <select
-                                  value={order.status}
-                                  onChange={(e) =>
-                                    handleOrderStatusChange(
-                                      order.id,
-                                      e.target.value as OrderStatus
-                                    )
-                                  }
-                                  className="block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
-                                >
-                                  {ORDER_STATUS_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
+                                <span className="flex items-center gap-1 text-sm text-gray-400">
+                                  <FaImage className="text-gray-300" />
+                                  No proof
+                                </span>
                               )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                {updatingOrderId === order.id ? (
+                                  <FaSpinner className="animate-spin text-psse-accent" />
+                                ) : order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELLED ? (
+                                  // Locked status - display as badge (cannot be changed)
+                                  <span
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium ${order.status === OrderStatus.COMPLETED
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
+                                      }`}
+                                  >
+                                    {order.status === OrderStatus.COMPLETED ? 'Completed' : 'Cancelled'}
+                                    <span className="ml-1 text-xs opacity-60">(Final)</span>
+                                  </span>
+                                ) : (
+                                  // Editable status dropdown
+                                  <select
+                                    value={order.status}
+                                    onChange={(e) =>
+                                      handleOrderStatusChange(
+                                        order.id,
+                                        e.target.value as OrderStatus
+                                      )
+                                    }
+                                    className="block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
+                                  >
+                                    {ORDER_STATUS_OPTIONS.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

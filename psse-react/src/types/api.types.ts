@@ -124,6 +124,7 @@ export interface ApiOrder {
   customerEmail: string;
   totalAmount: number | string; // Decimal from DB may come as string
   status: OrderStatus;
+  paymentProofUrl: string | null;
   createdAt: string;
   updatedAt: string;
   orderItems: ApiOrderItem[];

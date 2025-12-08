@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSpinner, FaShoppingBag, FaCalendar, FaCreditCard, FaReceipt } from 'react-icons/fa';
+import { FaSpinner, FaShoppingBag, FaCalendar, FaCreditCard, FaReceipt, FaUpload, FaCheckCircle, FaExternalLinkAlt } from 'react-icons/fa';
 import { useUserAuth } from '../../context';
 import { ordersApi } from '../../services/api';
 import type { ApiOrder } from '../../types';
+import { OrderStatus } from '../../types/api.types';
 
 export const TransactionHistory = () => {
   const navigate = useNavigate();
@@ -12,6 +13,13 @@ export const TransactionHistory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // State for tracking file upload
+  const [uploadingOrderId, setUploadingOrderId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Refs for hidden file inputs (one per order)
+  const fileInputRefs = useRef<Map<string, HTMLInputElement | null>>(new Map());
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -19,27 +27,69 @@ export const TransactionHistory = () => {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
+  // Function to fetch orders
+  const fetchOrders = async () => {
+    if (!isAuthenticated) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const userOrders = await ordersApi.getMyOrders();
+      setOrders(userOrders);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+      setError('Failed to load transaction history. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch user's orders
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!isAuthenticated) return;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const userOrders = await ordersApi.getMyOrders();
-        setOrders(userOrders);
-      } catch (err) {
-        console.error('Failed to fetch orders:', err);
-        setError('Failed to load transaction history. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchOrders();
   }, [isAuthenticated]);
+
+  /**
+   * Handle file upload for payment proof
+   */
+  const handleFileUpload = async (orderId: string, file: File) => {
+    setUploadingOrderId(orderId);
+    setUploadError(null);
+
+    try {
+      await ordersApi.uploadPaymentProof(orderId, file);
+      // Refresh orders list on success
+      await fetchOrders();
+    } catch (err) {
+      console.error('Failed to upload payment proof:', err);
+      setUploadError('Failed to upload payment proof. Please try again.');
+    } finally {
+      setUploadingOrderId(null);
+    }
+  };
+
+  /**
+   * Trigger file input click for a specific order
+   */
+  const triggerFileInput = (orderId: string) => {
+    const input = fileInputRefs.current.get(orderId);
+    if (input) {
+      input.click();
+    }
+  };
+
+  /**
+   * Handle file input change
+   */
+  const handleFileInputChange = (orderId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(orderId, file);
+    }
+    // Reset input value to allow re-uploading the same file
+    event.target.value = '';
+  };
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -100,6 +150,13 @@ export const TransactionHistory = () => {
           </div>
         )}
 
+        {/* Upload Error State */}
+        {uploadError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm font-medium">{uploadError}</p>
+          </div>
+        )}
+
         {/* Empty State */}
         {!isLoading && orders.length === 0 && (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
@@ -120,6 +177,15 @@ export const TransactionHistory = () => {
           <div className="space-y-6">
             {orders.map((order) => (
               <div key={order.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                {/* Hidden file input for this order */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={(el) => { fileInputRefs.current.set(order.id, el); }}
+                  onChange={(e) => handleFileInputChange(order.id, e)}
+                  className="hidden"
+                />
+
                 {/* Order Header */}
                 <div className="bg-linear-to-r from-psse-primary to-psse-dark p-6 text-white">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -144,6 +210,59 @@ export const TransactionHistory = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Payment Proof Section - Shown only for AWAITING_PAYMENT status */}
+                  {order.status === OrderStatus.AWAITING_PAYMENT && (
+                    <div className="mt-4 pt-4 border-t border-white/20">
+                      {!order.paymentProofUrl ? (
+                        // No proof uploaded yet - show upload button
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                          <p className="text-sm text-white/90">
+                            Please upload your GCash payment screenshot to proceed.
+                          </p>
+                          <button
+                            onClick={() => triggerFileInput(order.id)}
+                            disabled={uploadingOrderId === order.id}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${uploadingOrderId === order.id
+                              ? 'bg-white/30 cursor-not-allowed'
+                              : 'bg-white text-psse-primary hover:bg-orange-50 hover:shadow-md'
+                              }`}
+                          >
+                            {uploadingOrderId === order.id ? (
+                              <>
+                                <FaSpinner className="animate-spin h-4 w-4" />
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaUpload className="h-4 w-4" />
+                                <span>Upload GCash Proof</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        // Proof already uploaded - show confirmation
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-lg border border-green-400/30">
+                            <FaCheckCircle className="h-4 w-4 text-green-300" />
+                            <span className="text-sm font-medium text-green-100">
+                              Proof Submitted - Awaiting Review
+                            </span>
+                          </div>
+                          <a
+                            href={order.paymentProofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:text-white transition-colors"
+                          >
+                            <FaExternalLinkAlt className="h-3 w-3" />
+                            View Proof
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Order Details */}
@@ -215,3 +334,4 @@ export const TransactionHistory = () => {
     </div>
   );
 };
+

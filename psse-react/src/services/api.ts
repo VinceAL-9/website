@@ -276,6 +276,28 @@ export const ordersApi = {
     const response = await axiosInstance.patch<ApiOrder>(`/orders/${id}`, { status });
     return response.data;
   },
+
+  /**
+   * Upload payment proof for an order
+   * @param orderId - The ID of the order to upload payment proof for
+   * @param file - The image file to upload as payment proof
+   * @returns The updated order with paymentProofUrl set
+   */
+  uploadPaymentProof: async (orderId: string, file: File): Promise<ApiOrder> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await axiosInstance.patch<ApiOrder>(
+      `/orders/${orderId}/upload-proof`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
 };
 
 // Convenience exports for direct function access

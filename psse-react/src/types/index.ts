@@ -10,7 +10,7 @@ export interface Officer {
   category: OfficerCategory;
 }
 
-export type OfficerCategory = 
+export type OfficerCategory =
   | 'exec'
   | 'admin'
   | 'finance'
@@ -39,7 +39,7 @@ export interface EventBadge {
   variant: BadgeVariant;
 }
 
-export type BadgeVariant = 
+export type BadgeVariant =
   | 'primary'
   | 'success'
   | 'warning'
@@ -82,14 +82,14 @@ export interface Order {
   estimatedPickup: string;
 }
 
-export type OrderStatus = 
+export type OrderStatus =
   | 'pending_review'
   | 'awaiting_payment'
   | 'ready_pickup'
   | 'completed'
   | 'cancelled';
 
-export type PaymentStatus = 
+export type PaymentStatus =
   | 'pending'
   | 'processing'
   | 'completed'
