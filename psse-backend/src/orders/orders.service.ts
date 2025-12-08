@@ -36,10 +36,10 @@ export class OrdersService {
    *
    * This method uses Prisma's $transaction to ensure:
    * 1. Stock is validated for each product
-   * 2. Stock is decremented atomically for each product
+   * 2. Stock is IMMEDIATELY decremented atomically for each product (reserves stock)
    * 3. A unique human-readable referenceId is generated
    * 4. Order and OrderItem records are created
-   * 5. If any step fails, the entire transaction rolls back
+   * 5. If any step fails, the entire transaction rolls back (including stock changes)
    */
   async create(createOrderDto: CreateOrderDto, userId?: string) {
     const { customerName, studentId, contactNumber, customerEmail, items } = createOrderDto;
@@ -59,7 +59,7 @@ export class OrdersService {
       // Variable to accumulate the total order amount
       let totalAmount = new Prisma.Decimal(0);
 
-      // Step 1: Iterate through each item to validate and process
+      // Step 1: Iterate through each item to validate, process, and RESERVE stock
       for (const item of items) {
         // Step 2: Fetch the product to check stock availability and get current price
         const product = await tx.product.findUnique({
@@ -71,12 +71,30 @@ export class OrdersService {
           throw new NotFoundException(`Product with ID ${item.productId} not found`);
         }
 
-        // Step 3: Validate sufficient stock is available (stock is NOT decremented here)
-        // Stock will only be decremented when order status is set to COMPLETED
+        // Step 3: Validate sufficient stock is available
         if (product.stock < item.quantity) {
           throw new BadRequestException(
             `Product "${product.name}" is out of stock. ` +
             `Available: ${product.stock}, Requested: ${item.quantity}`
+          );
+        }
+
+        // Step 4: CRITICAL - Immediately decrement stock to RESERVE it
+        // This prevents race conditions where multiple users order the last item
+        const updatedProduct = await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+
+        // Safety check: Ensure stock didn't go negative (shouldn't happen due to above check,
+        // but handles concurrent edge cases where Prisma constraint might not catch it)
+        if (updatedProduct.stock < 0) {
+          throw new BadRequestException(
+            `Product "${product.name}" is out of stock. Unable to reserve requested quantity.`
           );
         }
 
@@ -189,7 +207,9 @@ export class OrdersService {
 
   /**
    * Updates an order's status.
-   * When status is changed to COMPLETED, decrements product stock.
+   * Stock is already decremented at order creation, so:
+   * - COMPLETED: No stock changes needed (already reserved)
+   * - CANCELLED/REJECTED: Restore (increment) the stock back to the products
    * COMPLETED and CANCELLED statuses are final and cannot be changed.
    */
   async update(id: string, updateOrderDto: UpdateOrderDto) {
@@ -218,7 +238,9 @@ export class OrdersService {
     // Check if status is being changed to a final status (COMPLETED or CANCELLED)
     const isCompletingOrder = updateOrderDto.status === OrderStatus.COMPLETED;
     const isCancellingOrder = updateOrderDto.status === OrderStatus.CANCELLED;
-    const isFinalStatus = isCompletingOrder || isCancellingOrder;
+    // Check for REJECTED status if it exists in your OrderStatus enum
+    const isRejectingOrder = (updateOrderDto.status as string) === 'REJECTED';
+    const shouldRestoreStock = isCancellingOrder || isRejectingOrder;
 
     // Helper function to delete payment proof from Cloudinary (if exists)
     // Note: We keep the URL in the database for record-keeping
@@ -233,38 +255,60 @@ export class OrdersService {
       }
     };
 
-    // If completing the order, decrement stock in a transaction
+    // If completing the order, just update the status (stock already reserved at creation)
     if (isCompletingOrder) {
+      const updatedOrder = await this.prisma.order.update({
+        where: { id },
+        data: updateOrderDto,
+        include: {
+          orderItems: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  category: true,
+                  imageUrl: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Delete payment proof from Cloudinary after successful update
+      await deletePaymentProofFromCloudinary();
+
+      return updatedOrder;
+    }
+
+    // If cancelling or rejecting the order, RESTORE stock in a transaction
+    if (shouldRestoreStock) {
       return this.prisma.$transaction(async (tx) => {
-        // Decrement stock for each order item
+        // Restore stock for each order item
         for (const item of existingOrder.orderItems) {
-          // First, verify stock is still available
+          // Check if the product still exists before trying to restock
           const product = await tx.product.findUnique({
             where: { id: item.productId },
           });
 
-          if (!product) {
-            throw new NotFoundException(
-              `Product with ID ${item.productId} no longer exists`
-            );
-          }
-
-          if (product.stock < item.quantity) {
-            throw new BadRequestException(
-              `Insufficient stock for "${product.name}". ` +
-              `Available: ${product.stock}, Required: ${item.quantity}`
-            );
-          }
-
-          // Decrement the product stock
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                decrement: item.quantity,
+          // Only restore stock if product still exists (handle deleted products gracefully)
+          if (product) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  increment: item.quantity,
+                },
               },
-            },
-          });
+            });
+          } else {
+            // Log warning but don't fail - product may have been deleted
+            console.warn(
+              `Product with ID ${item.productId} no longer exists. ` +
+              `Cannot restore ${item.quantity} units of stock.`
+            );
+          }
         }
 
         // Update the order status
@@ -287,39 +331,13 @@ export class OrdersService {
           },
         });
 
+        return updatedOrder;
+      }).then(async (updatedOrder) => {
         // Delete payment proof from Cloudinary after successful transaction
         // (done outside transaction as it's an external service)
         await deletePaymentProofFromCloudinary();
-
         return updatedOrder;
       });
-    }
-
-    // If cancelling the order, delete payment proof from Cloudinary
-    if (isCancellingOrder) {
-      const updatedOrder = await this.prisma.order.update({
-        where: { id },
-        data: updateOrderDto,
-        include: {
-          orderItems: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  category: true,
-                  imageUrl: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      // Delete payment proof from Cloudinary
-      await deletePaymentProofFromCloudinary();
-
-      return updatedOrder;
     }
 
     // For non-final status changes, just update the order
@@ -423,6 +441,113 @@ export class OrdersService {
     });
 
     return updatedOrder;
+  }
+
+  /**
+   * Allows a user to cancel their own order.
+   * 
+   * Conditions for cancellation:
+   * 1. Order must exist
+   * 2. Order must belong to the requesting user
+   * 3. Order must not have a payment proof uploaded
+   * 4. Order must not already be in a final status (COMPLETED/CANCELLED)
+   * 
+   * Upon cancellation, stock is restored for all order items.
+   * 
+   * @param orderId - The ID of the order to cancel
+   * @param userId - The ID of the user requesting cancellation
+   * @returns The updated Order with status CANCELLED
+   * @throws NotFoundException if the order does not exist
+   * @throws BadRequestException if cancellation conditions are not met
+   */
+  async cancelOrderByUser(orderId: string, userId: string): Promise<Order> {
+    // Step 1: Find the order with its items
+    const existingOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: true,
+      },
+    });
+
+    // Verify order exists
+    if (!existingOrder) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Step 2: Verify the order belongs to the current user
+    if (existingOrder.userId !== userId) {
+      throw new BadRequestException('You can only cancel your own orders');
+    }
+
+    // Step 3: Check if order is already in a final status
+    if (
+      existingOrder.status === OrderStatus.COMPLETED ||
+      existingOrder.status === OrderStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Cannot cancel order with status '${existingOrder.status}'. This status is final.`
+      );
+    }
+
+    // Step 4: Check if payment proof has been uploaded
+    if (existingOrder.paymentProofUrl) {
+      throw new BadRequestException(
+        'Cannot cancel order after payment proof has been submitted. Please contact support.'
+      );
+    }
+
+    // Step 5: Cancel the order and restore stock in a transaction
+    return this.prisma.$transaction(async (tx) => {
+      // Restore stock for each order item
+      for (const item of existingOrder.orderItems) {
+        // Check if the product still exists before trying to restock
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
+
+        // Only restore stock if product still exists
+        if (product) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                increment: item.quantity,
+              },
+            },
+          });
+        } else {
+          // Log warning but don't fail - product may have been deleted
+          console.warn(
+            `Product with ID ${item.productId} no longer exists. ` +
+            `Cannot restore ${item.quantity} units of stock.`
+          );
+        }
+      }
+
+      // Update the order status to CANCELLED
+      const cancelledOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.CANCELLED,
+        },
+        include: {
+          orderItems: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  category: true,
+                  imageUrl: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return cancelledOrder;
+    });
   }
 }
 

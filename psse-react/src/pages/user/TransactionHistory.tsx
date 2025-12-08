@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSpinner, FaShoppingBag, FaCalendar, FaCreditCard, FaReceipt, FaUpload, FaCheckCircle, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaSpinner, FaShoppingBag, FaCalendar, FaCreditCard, FaReceipt, FaUpload, FaCheckCircle, FaExternalLinkAlt, FaTimesCircle } from 'react-icons/fa';
 import { useUserAuth } from '../../context';
 import { ordersApi } from '../../services/api';
 import type { ApiOrder } from '../../types';
@@ -16,6 +16,11 @@ export const TransactionHistory = () => {
   // State for tracking file upload
   const [uploadingOrderId, setUploadingOrderId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // State for tracking order cancellation
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null);
 
   // Refs for hidden file inputs (one per order)
   const fileInputRefs = useRef<Map<string, HTMLInputElement | null>>(new Map());
@@ -91,6 +96,26 @@ export const TransactionHistory = () => {
     event.target.value = '';
   };
 
+  /**
+   * Handle order cancellation
+   */
+  const handleCancelOrder = async (orderId: string) => {
+    setCancellingOrderId(orderId);
+    setCancelError(null);
+    setShowCancelConfirm(null);
+
+    try {
+      await ordersApi.cancelOrder(orderId);
+      // Refresh orders list on success
+      await fetchOrders();
+    } catch (err) {
+      console.error('Failed to cancel order:', err);
+      setCancelError('Failed to cancel order. Please try again.');
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -157,6 +182,13 @@ export const TransactionHistory = () => {
           </div>
         )}
 
+        {/* Cancel Error State */}
+        {cancelError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm font-medium">{cancelError}</p>
+          </div>
+        )}
+
         {/* Empty State */}
         {!isLoading && orders.length === 0 && (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
@@ -215,31 +247,73 @@ export const TransactionHistory = () => {
                   {order.status === OrderStatus.AWAITING_PAYMENT && (
                     <div className="mt-4 pt-4 border-t border-white/20">
                       {!order.paymentProofUrl ? (
-                        // No proof uploaded yet - show upload button
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                          <p className="text-sm text-white/90">
-                            Please upload your GCash payment screenshot to proceed.
-                          </p>
-                          <button
-                            onClick={() => triggerFileInput(order.id)}
-                            disabled={uploadingOrderId === order.id}
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${uploadingOrderId === order.id
-                              ? 'bg-white/30 cursor-not-allowed'
-                              : 'bg-white text-psse-primary hover:bg-orange-50 hover:shadow-md'
-                              }`}
-                          >
-                            {uploadingOrderId === order.id ? (
-                              <>
-                                <FaSpinner className="animate-spin h-4 w-4" />
-                                <span>Uploading...</span>
-                              </>
+                        // No proof uploaded yet - show upload button and cancel option
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <p className="text-sm text-white/90">
+                              Please upload your GCash payment screenshot to proceed.
+                            </p>
+                            <button
+                              onClick={() => triggerFileInput(order.id)}
+                              disabled={uploadingOrderId === order.id}
+                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${uploadingOrderId === order.id
+                                ? 'bg-white/30 cursor-not-allowed'
+                                : 'bg-white text-psse-primary hover:bg-orange-50 hover:shadow-md'
+                                }`}
+                            >
+                              {uploadingOrderId === order.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin h-4 w-4" />
+                                  <span>Uploading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FaUpload className="h-4 w-4" />
+                                  <span>Upload GCash Proof</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Cancel Order Section - Only shown when no payment proof uploaded */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            {showCancelConfirm === order.id ? (
+                              // Confirmation dialog
+                              <div className="flex items-center gap-3 px-4 py-2 bg-red-500/20 rounded-lg border border-red-400/30">
+                                <span className="text-sm text-white">
+                                  Are you sure you want to cancel this order?
+                                </span>
+                                <button
+                                  onClick={() => handleCancelOrder(order.id)}
+                                  disabled={cancellingOrderId === order.id}
+                                  className="px-3 py-1 bg-red-500 text-white text-sm font-medium rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                                >
+                                  {cancellingOrderId === order.id ? (
+                                    <FaSpinner className="animate-spin h-4 w-4" />
+                                  ) : (
+                                    'Yes, Cancel'
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => setShowCancelConfirm(null)}
+                                  disabled={cancellingOrderId === order.id}
+                                  className="px-3 py-1 bg-white/20 text-white text-sm font-medium rounded hover:bg-white/30 transition-colors disabled:opacity-50"
+                                >
+                                  No, Keep Order
+                                </button>
+                              </div>
                             ) : (
-                              <>
-                                <FaUpload className="h-4 w-4" />
-                                <span>Upload GCash Proof</span>
-                              </>
+                              // Cancel button
+                              <button
+                                onClick={() => setShowCancelConfirm(order.id)}
+                                disabled={cancellingOrderId === order.id}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-200 hover:text-white hover:bg-red-500/30 rounded-lg transition-all"
+                              >
+                                <FaTimesCircle className="h-4 w-4" />
+                                <span>Cancel Order</span>
+                              </button>
                             )}
-                          </button>
+                          </div>
                         </div>
                       ) : (
                         // Proof already uploaded - show confirmation

@@ -86,6 +86,21 @@ export class OrdersController {
   }
 
   /**
+   * PATCH /orders/:id/cancel - Cancel own order (User)
+   * Allows users to cancel their own orders before payment proof is uploaded
+   * Protected by JWT authentication - verifies order ownership
+   * NOTE: This route MUST be defined before /:id to avoid "cancel" being treated as part of the ID
+   */
+  @Patch(':id/cancel')
+  @UseGuards(JwtAuthGuard)
+  async cancelOrder(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ): Promise<Order> {
+    return this.ordersService.cancelOrderByUser(id, user.id);
+  }
+
+  /**
    * PATCH /orders/:id - Update order status (Admin only)
    */
   @Patch(':id')

@@ -298,6 +298,18 @@ export const ordersApi = {
     );
     return response.data;
   },
+
+  /**
+   * Cancel an order (User)
+   * Only allowed when no payment proof has been uploaded yet
+   * Uses the dedicated cancel endpoint that verifies order ownership
+   * @param orderId - The ID of the order to cancel
+   * @returns The updated order with status CANCELLED
+   */
+  cancelOrder: async (orderId: string): Promise<ApiOrder> => {
+    const response = await axiosInstance.patch<ApiOrder>(`/orders/${orderId}/cancel`);
+    return response.data;
+  },
 };
 
 // Convenience exports for direct function access
