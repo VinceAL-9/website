@@ -12,7 +12,7 @@ async function bootstrap() {
 
   // Enable CORS for React frontend (Vite default port)
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: [process.env.FRONTEND_URL || 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true,
   });
