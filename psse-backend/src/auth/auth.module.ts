@@ -16,11 +16,18 @@ import { MailModule } from '../mail';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '1d';
+        const expiresIn =
+          configService.get<string>('JWT_ACCESS_EXPIRES_IN') ||
+          configService.get<string>('JWT_EXPIRES_IN') ||
+          '15m';
         return {
           secret: configService.get<string>('JWT_SECRET') || 'defaultSecretKey',
           signOptions: {
-            expiresIn: expiresIn as `${number}d` | `${number}h` | `${number}m` | `${number}s`,
+            expiresIn: expiresIn as
+              | `${number}d`
+              | `${number}h`
+              | `${number}m`
+              | `${number}s`,
           },
         };
       },

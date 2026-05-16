@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaShoppingCart, FaTrash, FaMinus, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { FaShoppingCart, FaTrash, FaMinus, FaPlus, FaExclamationTriangle, FaCheckCircle, FaCopy } from 'react-icons/fa';
 import { toast } from 'sonner';
 import { Modal, Button } from '../common';
 import { useOrders, useUserAuth } from '../../context';
-import { ordersApi } from '../../services';
-import type { CreateOrderDto } from '../../types';
+import { ordersApi, extractErrorMessage } from '../../services';
+import type { CreateOrderDto, ApiOrder } from '../../types';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -19,7 +19,7 @@ interface CheckoutFormData {
   contactNumber: string;
 }
 
-type CheckoutStep = 'cart' | 'form' | 'error';
+type CheckoutStep = 'cart' | 'form' | 'success' | 'error';
 
 export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
   const {
@@ -43,6 +43,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [createdOrder, setCreatedOrder] = useState<ApiOrder | null>(null);
 
   // Task D: Pre-fill form data from user profile when modal opens or user changes
   useEffect(() => {
@@ -111,33 +112,31 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
         })),
       };
 
-      await ordersApi.createOrder(orderPayload);
+      const order = await ordersApi.createOrder(orderPayload);
+      setCreatedOrder(order);
 
-      // Task C: Success - clear cart, close modal, navigate, and show toast
+      // Task C: Success - clear cart, but don't close immediately - show reference ID
       clearCart();
-      onClose();
-      toast.success('Order placed! Please upload your payment proof.');
-      navigate('/user/transactions');
+      setStep('success');
+      toast.success('Order placed successfully!');
     } catch (error: unknown) {
-      // Handle error response
-      let message = 'An error occurred while placing your order. Please try again.';
-
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: { message?: string | string[] } } };
-        const responseMessage = axiosError.response?.data?.message;
-
-        if (Array.isArray(responseMessage)) {
-          message = responseMessage.join(', ');
-        } else if (typeof responseMessage === 'string') {
-          message = responseMessage;
-        }
-      }
-
-      setErrorMessage(message);
+      setErrorMessage(extractErrorMessage(error));
       setStep('error');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const copyToReferenceId = () => {
+    if (createdOrder) {
+      navigator.clipboard.writeText(createdOrder.referenceId);
+      toast.success('Reference ID copied to clipboard!');
+    }
+  };
+
+  const handleGoToTransactions = () => {
+    onClose();
+    navigate('/user/transactions');
   };
 
   const resetFormForUser = () => {
@@ -163,6 +162,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     resetFormForUser();
     setStep('cart');
     setErrorMessage('');
+    setCreatedOrder(null);
     onClose();
   };
 
@@ -362,7 +362,42 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     </form>
   );
 
-  // Note: renderSuccessStep removed - we now redirect to /user/transactions on success
+  const renderSuccessStep = () => (
+    <div className="text-center py-8">
+      <FaCheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+      <h4 className="text-2xl font-bold text-gray-900 mb-2">Order Placed!</h4>
+      <p className="text-gray-600 mb-8">
+        Your order has been recorded. Please save your reference ID for payment verification.
+      </p>
+
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
+        <span className="block text-sm text-gray-500 uppercase tracking-wider font-semibold mb-2">
+          Your Reference ID
+        </span>
+        <div className="flex items-center justify-center gap-3">
+          <code className="text-2xl font-mono font-bold text-psse-accent">
+            {createdOrder?.referenceId}
+          </code>
+          <button
+            onClick={copyToReferenceId}
+            className="p-2 text-gray-400 hover:text-psse-accent transition-colors"
+            title="Copy ID"
+          >
+            <FaCopy size={20} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <Button variant="primary" onClick={handleGoToTransactions}>
+          Go to Transaction History
+        </Button>
+        <Button variant="ghost" onClick={handleClose}>
+          Continue Shopping
+        </Button>
+      </div>
+    </div>
+  );
 
   const renderErrorStep = () => (
     <div className="text-center py-8">
@@ -390,6 +425,8 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
         return 'Shopping Cart';
       case 'form':
         return 'Checkout';
+      case 'success':
+        return 'Order Success';
       case 'error':
         return 'Order Error';
       default:
@@ -401,6 +438,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     <Modal isOpen={isOpen} onClose={handleClose} title={getTitle()} size="lg">
       {step === 'cart' && renderCartStep()}
       {step === 'form' && renderFormStep()}
+      {step === 'success' && renderSuccessStep()}
       {step === 'error' && renderErrorStep()}
     </Modal>
   );

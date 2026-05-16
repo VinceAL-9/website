@@ -115,7 +115,7 @@ export function groupOfficersByCategory(officers: ApiOfficer[]): GroupedOfficers
  */
 export function mapApiOfficerToOfficer(apiOfficer: ApiOfficer) {
   return {
-    id: String(apiOfficer.id),
+    id: apiOfficer.id,
     title: apiOfficer.position,
     name: apiOfficer.name,
     image: apiOfficer.photoUrl,

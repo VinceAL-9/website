@@ -15,16 +15,17 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { Category } from '@prisma/client';
-import { CreateProductDto, UpdateProductDto } from './dto';
+import { CheckStockDto, CreateProductDto, UpdateProductDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { CloudinaryService } from '../cloudinary';
+import 'multer';
 
 @Controller('products')
 export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   @Get()
   findAll(@Query('category') category?: Category) {
@@ -34,6 +35,12 @@ export class ProductsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
+  }
+
+  @Post('check-stock')
+  @UseGuards(JwtAuthGuard)
+  checkStock(@Body() body: CheckStockDto) {
+    return this.productsService.checkStock(body.items);
   }
 
   @Post()
@@ -48,21 +55,26 @@ export class ProductsController {
     // If a file is uploaded, upload it to Cloudinary and use that URL
     if (file) {
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-products');
+        const uploadResult = await this.cloudinaryService.uploadImage(
+          file,
+          'psse-products',
+        );
         imageUrl = uploadResult.secure_url;
-      } catch (error) {
+      } catch {
         throw new BadRequestException('Failed to upload image to Cloudinary');
       }
     }
 
     // If no file uploaded and no imageUrl provided, throw error
     if (!imageUrl) {
-      throw new BadRequestException('Either upload an image file or provide an imageUrl');
+      throw new BadRequestException(
+        'Either upload an image file or provide an imageUrl',
+      );
     }
 
     return this.productsService.create({
       ...createProductDto,
-      imageUrl: imageUrl as string,
+      imageUrl: imageUrl,
     });
   }
 
@@ -79,9 +91,12 @@ export class ProductsController {
     // If a file is uploaded, upload it to Cloudinary and use that URL
     if (file) {
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-products');
+        const uploadResult = await this.cloudinaryService.uploadImage(
+          file,
+          'psse-products',
+        );
         imageUrl = uploadResult.secure_url;
-      } catch (error) {
+      } catch {
         throw new BadRequestException('Failed to upload image to Cloudinary');
       }
     }

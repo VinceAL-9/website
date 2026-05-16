@@ -1,17 +1,24 @@
-import { IsString, IsNotEmpty, IsInt, IsOptional, Min, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsInt,
+  IsOptional,
+  Min,
+  IsEnum,
+} from 'class-validator';
 import { OfficerCategory } from '@prisma/client';
 
 export class CreateOfficerDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
-  position: string;
+  position!: string;
 
   @IsEnum(OfficerCategory)
-  category: OfficerCategory;
+  category!: OfficerCategory;
 
   @IsString()
   @IsOptional()
@@ -19,7 +26,7 @@ export class CreateOfficerDto {
 
   @IsString()
   @IsNotEmpty()
-  academicYear: string;
+  academicYear!: string;
 
   @IsInt()
   @Min(0)

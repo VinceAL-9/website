@@ -44,8 +44,8 @@ const initialEventForm: EventFormData = {
 };
 
 const ORDER_STATUS_OPTIONS: { value: OrderStatus; label: string; color: string }[] = [
-  { value: OrderStatus.PENDING_REVIEW, label: 'Pending Review', color: 'bg-yellow-100 text-yellow-800' },
-  { value: OrderStatus.AWAITING_PAYMENT, label: 'Awaiting Payment', color: 'bg-orange-100 text-orange-800' },
+  { value: OrderStatus.PENDING, label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+  { value: OrderStatus.PAID, label: 'Paid', color: 'bg-orange-100 text-orange-800' },
   { value: OrderStatus.READY_PICKUP, label: 'Ready for Pickup', color: 'bg-blue-100 text-blue-800' },
   { value: OrderStatus.COMPLETED, label: 'Completed', color: 'bg-green-100 text-green-800' },
   { value: OrderStatus.CANCELLED, label: 'Cancelled', color: 'bg-red-100 text-red-800' },
@@ -56,20 +56,23 @@ interface OfficerFormData {
   position: string;
   category: string;
   academicYear: string;
+  order: string;
 }
 
 const initialOfficerForm: OfficerFormData = {
   name: '',
   position: '',
-  category: 'executive',
+  category: 'EXEC',
   academicYear: '',
+  order: '0',
 };
 
 const OFFICER_CATEGORY_OPTIONS = [
-  { value: 'executive', label: 'Executive' },
-  { value: 'administrative', label: 'Administrative' },
-  { value: 'audit', label: 'Audit' },
-  { value: 'communications', label: 'Communications' },
+  { value: 'EXEC', label: 'Executive Board' },
+  { value: 'ADMIN', label: 'Administrative' },
+  { value: 'FINANCE', label: 'Finance & Treasury' },
+  { value: 'REP', label: 'Year Level Reps' },
+  { value: 'AMBASSADOR', label: 'Ambassadors' },
 ];
 
 interface ProductFormData {
@@ -312,18 +315,19 @@ export const Dashboard = () => {
       await eventsApi.deleteEvent(event.id);
       console.log('Event deleted successfully');
       loadEvents();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number, data?: { message?: string } }, message?: string };
       console.error('Error deleting event:', {
         eventId: event.id,
-        error: err,
-        response: err.response,
-        status: err.response?.status,
-        message: err.response?.data?.message,
+        error: error,
+        response: error.response,
+        status: error.response?.status,
+        message: error.response?.data?.message,
       });
 
       // Don't show alert if it's a 401 (user will be redirected to login)
-      if (err.response?.status !== 401) {
-        alert(`Failed to delete event: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+      if (error.response?.status !== 401) {
+        alert(`Failed to delete event: ${error.response?.data?.message || error.message || 'Unknown error'}`);
       }
     }
   };
@@ -362,6 +366,7 @@ export const Dashboard = () => {
       position: officer.position,
       category: officer.category,
       academicYear: officer.academicYear,
+      order: String(officer.order || 0),
     });
     setSelectedOfficerPhotoFile(null);
     setOfficerPhotoPreview(officer.photoUrl);
@@ -396,6 +401,7 @@ export const Dashboard = () => {
       formData.append('position', officerForm.position);
       formData.append('category', officerForm.category);
       formData.append('academicYear', officerForm.academicYear);
+      formData.append('order', officerForm.order);
 
       if (selectedOfficerPhotoFile) {
         formData.append('photo', selectedOfficerPhotoFile);
@@ -429,10 +435,11 @@ export const Dashboard = () => {
     try {
       await officersApi.deleteOfficer(officer.id);
       loadOfficers();
-    } catch (err: any) {
-      console.error('Error deleting officer:', err);
-      if (err.response?.status !== 401) {
-        alert(`Failed to delete officer: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number, data?: { message?: string } }, message?: string };
+      console.error('Error deleting product:', error);
+      if (error.response?.status !== 401) {
+        alert(`Failed to delete product: ${error.response?.data?.message || error.message || 'Unknown error'}`);
       }
     }
   };
@@ -539,10 +546,11 @@ export const Dashboard = () => {
     try {
       await productsApi.deleteProduct(product.id);
       loadProducts();
-    } catch (err: any) {
-      console.error('Error deleting product:', err);
-      if (err.response?.status !== 401) {
-        alert(`Failed to delete product: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number, data?: { message?: string } }, message?: string };
+      console.error('Error deleting product:', error);
+      if (error.response?.status !== 401) {
+        alert(`Failed to delete product: ${error.response?.data?.message || error.message || 'Unknown error'}`);
       }
     }
   };
@@ -796,7 +804,7 @@ export const Dashboard = () => {
                     ) : (
                       orders.map((order) => {
                         // Check if order needs review (awaiting payment with proof uploaded)
-                        const needsReview = order.status === OrderStatus.AWAITING_PAYMENT && order.paymentProofUrl;
+                        const needsReview = order.status === OrderStatus.PAID && order.paymentProofUrl;
 
                         return (
                           <tr
@@ -1416,6 +1424,25 @@ export const Dashboard = () => {
               onChange={handleOfficerFormChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
               placeholder="e.g., 2024-2025"
+            />
+          </div>
+
+          {/* Order */}
+          <div>
+            <label
+              htmlFor="officer-order"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Display Order (Higher numbers appear later)
+            </label>
+            <input
+              id="officer-order"
+              name="order"
+              type="number"
+              min="0"
+              value={officerForm.order}
+              onChange={handleOfficerFormChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
             />
           </div>
 

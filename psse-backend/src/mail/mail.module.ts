@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.adapter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailService } from './mail.service';
 
@@ -8,7 +8,7 @@ import { MailService } from './mail.service';
   imports: [
     MailerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         transport: {
           host: configService.get<string>('MAIL_HOST'),
           port: configService.get<number>('MAIL_PORT'),
@@ -26,6 +26,7 @@ import { MailService } from './mail.service';
         },
         template: {
           dir: process.cwd() + '/src/mail/templates',
+
           adapter: new HandlebarsAdapter(),
           options: {
             strict: true,

@@ -1,11 +1,11 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Patch, 
-  Delete, 
-  Body, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
   Query,
   UseGuards,
   UseInterceptors,
@@ -17,6 +17,7 @@ import { EventsService } from './events.service';
 import { CreateEventDto, UpdateEventDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { CloudinaryService } from '../cloudinary';
+import 'multer';
 
 @Controller('events')
 export class EventsController {
@@ -28,7 +29,8 @@ export class EventsController {
   @Get()
   findAll(@Query('isUpcoming') isUpcoming?: string) {
     // Convert query string to boolean
-    const isUpcomingBool = isUpcoming === 'true' ? true : isUpcoming === 'false' ? false : undefined;
+    const isUpcomingBool =
+      isUpcoming === 'true' ? true : isUpcoming === 'false' ? false : undefined;
     return this.eventsService.findAll(isUpcomingBool);
   }
 
@@ -49,16 +51,23 @@ export class EventsController {
     // If a file is uploaded, upload it to Cloudinary and use that URL
     if (file) {
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-events');
+        const uploadResult = await this.cloudinaryService.uploadImage(
+          file,
+          'psse-events',
+        );
         imageUrl = uploadResult.secure_url;
-      } catch (error) {
-        throw new BadRequestException('Failed to upload image to Cloudinary');
+      } catch (err) {
+        const uploadError =
+          err instanceof Error ? err : new Error('Cloudinary upload failed');
+        throw new BadRequestException(uploadError.message);
       }
     }
 
     // If no file uploaded and no imageUrl provided, throw error
     if (!imageUrl) {
-      throw new BadRequestException('Either upload an image file or provide an imageUrl');
+      throw new BadRequestException(
+        'Either upload an image file or provide an imageUrl',
+      );
     }
 
     return this.eventsService.create({
@@ -80,9 +89,12 @@ export class EventsController {
     // If a file is uploaded, upload it to Cloudinary and use that URL
     if (file) {
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-events');
+        const uploadResult = await this.cloudinaryService.uploadImage(
+          file,
+          'psse-events',
+        );
         imageUrl = uploadResult.secure_url;
-      } catch (error) {
+      } catch {
         throw new BadRequestException('Failed to upload image to Cloudinary');
       }
     }

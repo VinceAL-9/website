@@ -1,44 +1,53 @@
-import { IsString, IsNotEmpty, IsNumber, IsInt, IsEnum, IsBoolean, IsOptional, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsInt,
+  IsEnum,
+  IsBoolean,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { Category } from '@prisma/client';
 
 export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description!: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Type(() => Number)
-  price: number;
+  price!: number;
 
   @IsInt()
   @Min(0)
   @Type(() => Number)
-  stock: number;
+  stock!: number;
 
   @IsEnum(Category)
-  category: Category;
+  category!: Category;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     // Transform empty string to undefined so validation passes
     if (value === '' || value === null || value === undefined) return undefined;
-    return value;
+    return value as string;
   })
   imageUrl?: string;
 
   @IsBoolean()
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (value === 'true') return true;
     if (value === 'false') return false;
-    return value;
+    return Boolean(value);
   })
   isFeatured?: boolean;
 }

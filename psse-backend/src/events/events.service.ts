@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
 import { CloudinaryService } from '../cloudinary';
 import { CreateEventDto, UpdateEventDto } from './dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class EventsService {
@@ -11,8 +12,8 @@ export class EventsService {
   ) {}
 
   async findAll(isUpcoming?: boolean) {
-    const where: any = {};
-    
+    const where: Prisma.EventWhereInput = {};
+
     if (isUpcoming !== undefined) {
       where.isUpcoming = isUpcoming;
     }
@@ -55,7 +56,10 @@ export class EventsService {
 
     // If a new imageUrl is provided and it's different from the existing one,
     // delete the old image from Cloudinary
-    if (updateEventDto.imageUrl && updateEventDto.imageUrl !== existingEvent.imageUrl) {
+    if (
+      updateEventDto.imageUrl &&
+      updateEventDto.imageUrl !== existingEvent.imageUrl
+    ) {
       try {
         await this.cloudinaryService.deleteImage(existingEvent.imageUrl);
       } catch (error) {

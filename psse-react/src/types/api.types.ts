@@ -16,8 +16,8 @@ export enum Category {
 }
 
 export enum OrderStatus {
-  PENDING_REVIEW = 'PENDING_REVIEW',
-  AWAITING_PAYMENT = 'AWAITING_PAYMENT',
+  PENDING = 'PENDING',
+  PAID = 'PAID',
   READY_PICKUP = 'READY_PICKUP',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
@@ -25,7 +25,7 @@ export enum OrderStatus {
 
 // User interface (for auth responses)
 export interface ApiUser {
-  id: number;
+  id: string;
   email: string;
   role: Role;
   studentId: string | null;
@@ -34,7 +34,7 @@ export interface ApiUser {
 
 // Officer interfaces
 export interface ApiOfficer {
-  id: number;
+  id: string;
   name: string;
   position: string;
   category: string;
@@ -52,11 +52,11 @@ export interface CreateOfficerDto {
   order?: number;
 }
 
-export interface UpdateOfficerDto extends Partial<CreateOfficerDto> { }
+export type UpdateOfficerDto = Partial<CreateOfficerDto>;
 
 // Event interfaces
 export interface ApiEvent {
-  id: number;
+  id: string;
   title: string;
   description: string;
   date: string;
@@ -74,11 +74,11 @@ export interface CreateEventDto {
   isUpcoming?: boolean;
 }
 
-export interface UpdateEventDto extends Partial<CreateEventDto> { }
+export type UpdateEventDto = Partial<CreateEventDto>;
 
 // Product interfaces
 export interface ApiProduct {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number | string; // Decimal from DB may come as string
@@ -98,7 +98,7 @@ export interface CreateProductDto {
   isFeatured?: boolean;
 }
 
-export interface UpdateProductDto extends Partial<CreateProductDto> { }
+export type UpdateProductDto = Partial<CreateProductDto>;
 
 // Order interfaces
 export interface ApiOrderItem {
@@ -141,6 +141,18 @@ export interface CreateOrderDto {
   contactNumber: string;
   customerEmail: string;
   items: OrderItemDto[];
+}
+
+export interface StockCheckItem {
+  productId: string;
+  name: string | null;
+  requestedQuantity: number;
+  currentStock: number;
+  available: boolean;
+}
+
+export interface StockCheckResponse {
+  items: StockCheckItem[];
 }
 
 // API Response types

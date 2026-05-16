@@ -10,4 +10,4 @@ import { CloudinaryModule } from '../cloudinary';
   controllers: [ProductsController],
   providers: [ProductsService],
 })
-export class ProductsModule { }
+export class ProductsModule {}

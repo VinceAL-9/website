@@ -8,15 +8,42 @@ import {
   Get,
   Query,
   UseGuards,
+  Req,
+  Res,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import type { AuthenticatedUser } from './interfaces';
 import { LoginDto, RegisterDto } from './dto';
 import { JwtAuthGuard } from './guards';
 import { CurrentUser } from './decorators';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
+
+  private setRefreshCookie(response: Response, refreshToken: string) {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    response.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/auth/refresh',
+      maxAge: this.authService.getRefreshCookieMaxAgeMs(),
+    });
+  }
+
+  private clearRefreshCookie(response: Response) {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    response.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/auth/refresh',
+    });
+  }
 
   /**
    * POST /auth/login
@@ -24,7 +51,10 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto): Promise<{ access_token: string }> {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ access_token: string }> {
     const user = await this.authService.validateUser(
       loginDto.email,
       loginDto.password,
@@ -34,7 +64,10 @@ export class AuthController {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    return this.authService.login(user);
+    const tokens = await this.authService.login(user);
+    this.setRefreshCookie(response, tokens.refreshToken);
+
+    return { access_token: tokens.accessToken };
   }
 
   /**
@@ -55,8 +88,44 @@ export class AuthController {
    */
   @Get('profile')
   @UseGuards(JwtAuthGuard)
-  getProfile(@CurrentUser() user: any) {
+  getProfile(@CurrentUser() user: AuthenticatedUser) {
     return user;
+  }
+
+  /**
+   * POST /auth/refresh
+   * Rotates refresh token and returns a new access token.
+   */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ access_token: string }> {
+    const cookies = request.cookies as Record<string, string> | undefined;
+    const refreshToken = cookies?.refresh_token;
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+    const tokens = await this.authService.refreshTokens(refreshToken);
+    this.setRefreshCookie(response, tokens.refreshToken);
+
+    return { access_token: tokens.accessToken };
+  }
+
+  /**
+   * POST /auth/logout
+   * Clears refresh token cookie and invalidates stored refresh token.
+   */
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @CurrentUser() user: { id: string },
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    this.clearRefreshCookie(response);
+    return this.authService.logout(user.id);
   }
 
   /**

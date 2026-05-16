@@ -1,30 +1,37 @@
-import { IsString, IsNotEmpty, IsDateString, IsBoolean, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateEventDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description!: string;
 
   @IsDateString()
-  date: string;
+  date!: string;
 
   @IsString()
   @IsNotEmpty()
-  location: string;
+  location!: string;
 
   @IsString()
   @IsOptional()
   imageUrl?: string;
 
   @Transform(({ value }) => {
-    if (value === 'true' || value === true) return true;
-    if (value === 'false' || value === false) return false;
-    return value;
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') return value.toLowerCase() === 'true';
+    return Boolean(value);
   })
   @IsBoolean()
   @IsOptional()

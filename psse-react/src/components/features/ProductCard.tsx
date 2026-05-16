@@ -1,5 +1,6 @@
 import { FaShoppingCart, FaCartPlus } from 'react-icons/fa';
 import { Card, CardImage, CardBody, Badge, Button } from '../common';
+import { useOrders } from '../../context';
 import type { Product } from '../../types';
 
 interface ProductCardProps {
@@ -10,8 +11,11 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onOrder, onAddToCart, showPurchaseOptions = true }: ProductCardProps) => {
-  const isOutOfStock = product.stock === 0;
-  const isLowStock = product.stock > 0 && product.stock <= 5;
+  const { getStockStatus } = useOrders();
+  
+  const stockStatus = getStockStatus(product.id);
+  const isOutOfStock = stockStatus === 'OUT_OF_STOCK';
+  const isLowStock = stockStatus === 'LOW_STOCK';
 
   // Handler for primary action - uses onOrder if provided, otherwise onAddToCart
   const handlePrimaryAction = () => {

@@ -9,8 +9,7 @@ interface ProtectedRouteProps {
 
 /**
  * ProtectedRoute component that guards routes requiring authentication.
- * Checks for access_token in localStorage. If not present, redirects to login.
- * Optionally checks user role against allowedRoles array.
+ * Uses auth context state to decide access and optionally checks user roles.
  */
 export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const location = useLocation();

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSpinner, FaShoppingBag, FaCalendar, FaCreditCard, FaReceipt, FaUpload, FaCheckCircle, FaExternalLinkAlt, FaTimesCircle } from 'react-icons/fa';
 import { useUserAuth } from '../../context';
@@ -33,7 +33,7 @@ export const TransactionHistory = () => {
   }, [authLoading, isAuthenticated, navigate]);
 
   // Function to fetch orders
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!isAuthenticated) return;
 
     setIsLoading(true);
@@ -48,12 +48,12 @@ export const TransactionHistory = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   // Fetch user's orders
   useEffect(() => {
     fetchOrders();
-  }, [isAuthenticated]);
+  }, [fetchOrders]);
 
   /**
    * Handle file upload for payment proof
@@ -131,8 +131,8 @@ export const TransactionHistory = () => {
   // Get status badge color
   const getStatusBadgeColor = (status: string) => {
     const statusColors: Record<string, string> = {
-      pending_review: 'bg-yellow-100 text-yellow-800',
-      awaiting_payment: 'bg-orange-100 text-orange-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      paid: 'bg-orange-100 text-orange-800',
       ready_pickup: 'bg-blue-100 text-blue-800',
       completed: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
@@ -243,8 +243,8 @@ export const TransactionHistory = () => {
                     </div>
                   </div>
 
-                  {/* Payment Proof Section - Shown only for AWAITING_PAYMENT status */}
-                  {order.status === OrderStatus.AWAITING_PAYMENT && (
+                  {/* Payment Proof Section - Shown while payment is pending/paid */}
+                  {(order.status === OrderStatus.PENDING || order.status === OrderStatus.PAID) && (
                     <div className="mt-4 pt-4 border-t border-white/20">
                       {!order.paymentProofUrl ? (
                         // No proof uploaded yet - show upload button and cancel option

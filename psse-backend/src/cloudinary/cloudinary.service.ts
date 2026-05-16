@@ -1,11 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  v2 as cloudinary,
-  UploadApiResponse,
-  UploadApiErrorResponse,
-} from 'cloudinary';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { CLOUDINARY } from './cloudinary.provider';
 import * as streamifier from 'streamifier';
+import 'multer';
 
 @Injectable()
 export class CloudinaryService {
@@ -23,16 +20,18 @@ export class CloudinaryService {
   async uploadImage(
     file: Express.Multer.File,
     folder: string = 'psse-uploads',
-  ): Promise<UploadApiResponse | UploadApiErrorResponse> {
+  ): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       const uploadStream = this.cloudinaryInstance.uploader.upload_stream(
         {
           folder,
           resource_type: 'auto',
+          quality: 'auto',
+          fetch_format: 'auto',
         },
         (error, result) => {
           if (error) {
-            reject(error);
+            reject(new Error(error.message || 'Upload failed'));
           } else if (result) {
             resolve(result);
           } else {
@@ -50,20 +49,44 @@ export class CloudinaryService {
    * @param imageUrl Full Cloudinary URL or public_id
    * @returns Promise with deletion result
    */
-  async deleteImage(imageUrl: string): Promise<any> {
+  async deleteImage(imageUrl: string): Promise<{ result: string }> {
     try {
       // Extract public_id from URL if full URL is provided
       const publicId = this.extractPublicId(imageUrl);
-      
+
       if (!publicId) {
         throw new Error('Invalid Cloudinary URL or public_id');
       }
 
-      return await this.cloudinaryInstance.uploader.destroy(publicId);
+      return await this.deleteWithRetry(publicId);
     } catch (error) {
       console.error('Error deleting image from Cloudinary:', error);
       throw error;
     }
+  }
+
+  private async deleteWithRetry(
+    publicId: string,
+    attempts: number = 3,
+    baseDelayMs: number = 250,
+  ): Promise<{ result: string }> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return (await this.cloudinaryInstance.uploader.destroy(publicId)) as {
+          result: string;
+        };
+      } catch (error) {
+        lastError = error;
+        if (attempt < attempts) {
+          const delayMs = baseDelayMs * attempt;
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    throw lastError;
   }
 
   /**
@@ -81,8 +104,8 @@ export class CloudinaryService {
       // Extract public_id from Cloudinary URL
       // Format: https://res.cloudinary.com/{cloud_name}/{resource_type}/upload/{transformations}/{version}/{public_id}.{format}
       const urlParts = url.split('/');
-      const uploadIndex = urlParts.findIndex(part => part === 'upload');
-      
+      const uploadIndex = urlParts.findIndex((part) => part === 'upload');
+
       if (uploadIndex === -1) {
         return null;
       }
@@ -91,11 +114,14 @@ export class CloudinaryService {
       const publicIdParts = urlParts.slice(uploadIndex + 1);
       // Skip version number if present (starts with 'v' followed by numbers)
       const startIndex = publicIdParts[0].match(/^v\d+$/) ? 1 : 0;
-      
+
       // Join the remaining parts and remove file extension
       const publicIdWithExt = publicIdParts.slice(startIndex).join('/');
-      const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
-      
+      const publicId = publicIdWithExt.substring(
+        0,
+        publicIdWithExt.lastIndexOf('.'),
+      );
+
       return publicId;
     } catch (error) {
       console.error('Error extracting public_id:', error);

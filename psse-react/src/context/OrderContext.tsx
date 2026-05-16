@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { Product, OrderStatus, PaymentStatus, ApiOrder, CreateOrderDto, ApiProduct, Category } from '../types';
+import type { Product, OrderStatus, PaymentStatus, ApiOrder, CreateOrderDto, ApiProduct, Category, StockCheckResponse } from '../types';
 import { ordersApi, productsApi } from '../services/api';
 
 // Cart Item type
@@ -23,7 +23,8 @@ type CartAction =
   | { type: 'REMOVE_FROM_CART'; payload: string }
   | { type: 'UPDATE_CART_QUANTITY'; payload: { productId: string; quantity: number } }
   | { type: 'CLEAR_CART' }
-  | { type: 'SET_PRODUCTS'; payload: Product[] };
+  | { type: 'SET_PRODUCTS'; payload: Product[] }
+  | { type: 'SYNC_CART'; payload: CartItem[] };
 
 // State - simplified to only cart and products
 interface CartState {
@@ -45,8 +46,12 @@ interface OrderContextType {
   submitError: string | null;
   clearSubmitError: () => void;
 
+  // Stock validation
+  validateCartStock: () => Promise<StockCheckResponse>;
+
   // Product helpers
   getProductById: (productId: string) => Product | undefined;
+  getStockStatus: (productId: string) => 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 
   // Status display helpers
   getStatusDisplayText: (status: OrderStatus) => string;
@@ -70,7 +75,7 @@ const categoryMap: Record<Category, 'lanyard' | 'tshirt'> = {
 
 // Transform API product to local Product type
 const transformApiProduct = (apiProduct: ApiProduct): Product => ({
-  id: apiProduct.id.toString(),
+  id: apiProduct.id,
   name: apiProduct.name,
   description: apiProduct.description,
   price: typeof apiProduct.price === 'string' ? parseFloat(apiProduct.price) : apiProduct.price,
@@ -181,6 +186,19 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     setSubmitError(null);
   }, []);
 
+  const validateCartStock = useCallback(async (): Promise<StockCheckResponse> => {
+    if (state.cart.length === 0) {
+      return { items: [] };
+    }
+
+    const items = state.cart.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    }));
+
+    return productsApi.checkStock(items);
+  }, [state.cart]);
+
   // Submit Order to API
   const submitOrder = useCallback(async (formData: OrderFormData): Promise<ApiOrder> => {
     setIsSubmitting(true);
@@ -240,16 +258,27 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
   const getProductByIdFromState = (productId: string) =>
     state.products.find((p) => p.id === productId);
 
+  // Stock display threshold
+  const LOW_STOCK_THRESHOLD = 5;
+
   // Status Display Text
   const getStatusDisplayText = (status: OrderStatus): string => {
     const statusMap: Record<OrderStatus, string> = {
-      pending_review: 'Order is being reviewed',
-      awaiting_payment: 'Awaiting Payment',
+      pending: 'Awaiting Payment',
+      paid: 'Payment Submitted',
       ready_pickup: 'Ready for Pickup',
       completed: 'Completed',
       cancelled: 'Cancelled',
     };
     return statusMap[status] || status;
+  };
+
+  // Stock Status Helper
+  const getStockStatus = (productId: string): 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' => {
+    const product = state.products.find((p) => p.id === productId);
+    if (!product || product.stock === 0) return 'OUT_OF_STOCK';
+    if (product.stock <= LOW_STOCK_THRESHOLD) return 'LOW_STOCK';
+    return 'IN_STOCK';
   };
 
   // Payment Status Display Text
@@ -330,7 +359,9 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     isSubmitting,
     submitError,
     clearSubmitError,
+    validateCartStock,
     getProductById: getProductByIdFromState,
+    getStockStatus,
     getStatusDisplayText,
     getPaymentStatusDisplayText,
     addToCart,
@@ -345,6 +376,7 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
 };
 
 // Hook
+// eslint-disable-next-line react-refresh/only-export-components
 export const useOrders = (): OrderContextType => {
   const context = useContext(OrderContext);
   if (context === undefined) {

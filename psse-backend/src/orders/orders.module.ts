@@ -11,4 +11,4 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
   providers: [OrdersService],
   exports: [OrdersService],
 })
-export class OrdersModule { }
+export class OrdersModule {}

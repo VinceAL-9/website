@@ -8,8 +8,32 @@ import type {
   CreateEventDto,
   UpdateEventDto,
   AuthResponse,
+  StockCheckResponse,
 } from '../types';
 import { OrderStatus } from '../types/api.types';
+
+/**
+ * API Error Interface
+ */
+export interface ApiError {
+  message: string | string[];
+  error?: string;
+  statusCode?: number;
+}
+
+/**
+ * Type-safe error extractor
+ */
+export const extractErrorMessage = (error: unknown): string => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosError = error as { response?: { data?: ApiError } };
+    const data = axiosError.response?.data;
+    if (data?.message) {
+      return Array.isArray(data.message) ? data.message.join(', ') : data.message;
+    }
+  }
+  return error instanceof Error ? error.message : 'An unexpected error occurred';
+};
 
 /**
  * Events API
@@ -26,7 +50,7 @@ export const eventsApi = {
   /**
    * Get a single event by ID
    */
-  getEvent: async (id: number): Promise<ApiEvent> => {
+  getEvent: async (id: string): Promise<ApiEvent> => {
     const response = await axiosInstance.get<ApiEvent>(`/events/${id}`);
     return response.data;
   },
@@ -68,7 +92,7 @@ export const eventsApi = {
    * Update an event (Admin)
    * Accepts FormData for file upload
    */
-  updateEvent: async (id: number, eventData: UpdateEventDto | FormData): Promise<ApiEvent> => {
+  updateEvent: async (id: string, eventData: UpdateEventDto | FormData): Promise<ApiEvent> => {
     const response = await axiosInstance.patch<ApiEvent>(`/events/${id}`, eventData, {
       headers: eventData instanceof FormData ? {
         'Content-Type': 'multipart/form-data',
@@ -80,7 +104,7 @@ export const eventsApi = {
   /**
    * Delete an event (Admin)
    */
-  deleteEvent: async (id: number): Promise<void> => {
+  deleteEvent: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/events/${id}`);
   },
 };
@@ -100,7 +124,7 @@ export const officersApi = {
   /**
    * Get a single officer by ID
    */
-  getOfficer: async (id: number): Promise<ApiOfficer> => {
+  getOfficer: async (id: string): Promise<ApiOfficer> => {
     const response = await axiosInstance.get<ApiOfficer>(`/officers/${id}`);
     return response.data;
   },
@@ -142,7 +166,7 @@ export const officersApi = {
    * Update an officer (Admin)
    * Accepts FormData for file upload
    */
-  updateOfficer: async (id: number, officerData: FormData): Promise<ApiOfficer> => {
+  updateOfficer: async (id: string, officerData: FormData): Promise<ApiOfficer> => {
     const response = await axiosInstance.patch<ApiOfficer>(`/officers/${id}`, officerData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -154,7 +178,7 @@ export const officersApi = {
   /**
    * Delete an officer (Admin)
    */
-  deleteOfficer: async (id: number): Promise<void> => {
+  deleteOfficer: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/officers/${id}`);
   },
 };
@@ -174,7 +198,7 @@ export const productsApi = {
   /**
    * Get a single product by ID
    */
-  getProduct: async (id: number): Promise<ApiProduct> => {
+  getProduct: async (id: string): Promise<ApiProduct> => {
     const response = await axiosInstance.get<ApiProduct>(`/products/${id}`);
     return response.data;
   },
@@ -216,7 +240,7 @@ export const productsApi = {
    * Update a product (Admin)
    * Accepts FormData for file upload
    */
-  updateProduct: async (id: number, data: FormData): Promise<ApiProduct> => {
+  updateProduct: async (id: string, data: FormData): Promise<ApiProduct> => {
     const response = await axiosInstance.patch<ApiProduct>(`/products/${id}`, data, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -228,8 +252,16 @@ export const productsApi = {
   /**
    * Delete a product (Admin)
    */
-  deleteProduct: async (id: number): Promise<void> => {
+  deleteProduct: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/products/${id}`);
+  },
+
+  /**
+   * Check stock availability for cart items
+   */
+  checkStock: async (items: { productId: string; quantity: number }[]): Promise<StockCheckResponse> => {
+    const response = await axiosInstance.post<StockCheckResponse>('/products/check-stock', { items });
+    return response.data;
   },
 };
 
@@ -256,7 +288,7 @@ export const ordersApi = {
   /**
    * Get a single order by ID (requires authentication)
    */
-  getOrder: async (id: number): Promise<ApiOrder> => {
+  getOrder: async (id: string): Promise<ApiOrder> => {
     const response = await axiosInstance.get<ApiOrder>(`/orders/${id}`);
     return response.data;
   },
@@ -341,7 +373,7 @@ export const authApi = {
     studentId: string;
     email: string;
     password: string;
-  }): Promise<{ id: number; email: string; name: string; studentId: string; role: string }> => {
+  }): Promise<{ id: string; email: string; name: string; studentId: string; role: string }> => {
     const response = await axiosInstance.post('/auth/register', data);
     return response.data;
   },
@@ -349,12 +381,28 @@ export const authApi = {
   /**
    * Get current user profile (requires token)
    */
-  getProfile: async (token: string): Promise<{ id: number; email: string; name: string | null; studentId: string | null; role: 'MEMBER' | 'ADMIN' }> => {
+  getProfile: async (token: string): Promise<{ id: string; email: string; name: string | null; studentId: string | null; role: 'MEMBER' | 'ADMIN' }> => {
     const response = await axiosInstance.get('/auth/profile', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+    return response.data;
+  },
+
+  /**
+   * Refresh access token using httpOnly refresh cookie
+   */
+  refresh: async (): Promise<AuthResponse> => {
+    const response = await axiosInstance.post<AuthResponse>('/auth/refresh', {}, { withCredentials: true });
+    return response.data;
+  },
+
+  /**
+   * Logout current user
+   */
+  logout: async (): Promise<{ message: string }> => {
+    const response = await axiosInstance.post('/auth/logout');
     return response.data;
   },
 

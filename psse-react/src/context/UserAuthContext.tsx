@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { authApi } from '../services/api';
 
 // User type based on API response
 interface User {
-    id: number;
+    id: string;
     email: string;
     name: string | null;
     role: 'MEMBER' | 'ADMIN';
@@ -38,9 +38,13 @@ interface UserAuthProviderProps {
 export const UserAuthProvider = ({ children }: UserAuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const isInitialized = useRef(false);
 
     // Restore session on mount
     useEffect(() => {
+        if (isInitialized.current) return;
+        isInitialized.current = true;
+
         const restoreSession = async () => {
             const token = localStorage.getItem(USER_TOKEN_KEY);
             if (token) {
@@ -48,13 +52,24 @@ export const UserAuthProvider = ({ children }: UserAuthProviderProps) => {
                     // Fetch user profile to validate token and get user data
                     const userProfile = await authApi.getProfile(token);
                     setUser(userProfile);
+                    setIsLoading(false);
+                    return;
                 } catch (error) {
-                    // Token is invalid, clear it
                     console.error('Failed to restore user session:', error);
                     localStorage.removeItem(USER_TOKEN_KEY);
                 }
             }
-            setIsLoading(false);
+
+            try {
+                const refreshed = await authApi.refresh();
+                localStorage.setItem(USER_TOKEN_KEY, refreshed.access_token);
+                const userProfile = await authApi.getProfile(refreshed.access_token);
+                setUser(userProfile);
+            } catch {
+                localStorage.removeItem(USER_TOKEN_KEY);
+            } finally {
+                setIsLoading(false);
+            }
         };
 
         restoreSession();
@@ -70,6 +85,9 @@ export const UserAuthProvider = ({ children }: UserAuthProviderProps) => {
     }, []);
 
     const logout = useCallback(() => {
+        authApi.logout().catch((error) => {
+            console.error('Failed to logout:', error);
+        });
         localStorage.removeItem(USER_TOKEN_KEY);
         setUser(null);
     }, []);
@@ -95,6 +113,7 @@ export const UserAuthProvider = ({ children }: UserAuthProviderProps) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useUserAuth = (): UserAuthContextType => {
     const context = useContext(UserAuthContext);
     if (context === undefined) {

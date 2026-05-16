@@ -39,10 +39,11 @@ export const VerifyEmail = () => {
                     setState('success');
                     setMessage(response.data.message || 'Email verified successfully!');
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const error = err as { response?: { data?: { message?: string } } };
                 if (isMounted) {
                     // Check if the error message indicates the email was already verified
-                    const errorMsg = err.response?.data?.message || '';
+                    const errorMsg = error.response?.data?.message || '';
                     
                     // If the token is invalid but might have been used already, show success
                     if (errorMsg.toLowerCase().includes('already verified') || 

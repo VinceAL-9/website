@@ -83,8 +83,8 @@ export interface Order {
 }
 
 export type OrderStatus =
-  | 'pending_review'
-  | 'awaiting_payment'
+  | 'pending'
+  | 'paid'
   | 'ready_pickup'
   | 'completed'
   | 'cancelled';

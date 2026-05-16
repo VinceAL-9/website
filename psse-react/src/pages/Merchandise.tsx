@@ -29,6 +29,7 @@ export const Merchandise = () => {
     productsError,
     addToCart,
     getCartItemCount,
+    validateCartStock,
   } = useOrders();
 
   const filteredProducts = useMemo(() => {
@@ -55,6 +56,24 @@ export const Merchandise = () => {
       showNotification(`${product.name} added to cart!`, 'success');
     } else {
       showNotification('Insufficient stock available', 'error');
+    }
+  };
+
+  const handleOpenCheckout = async () => {
+    try {
+      const stockCheck = await validateCartStock();
+      const unavailableItems = stockCheck.items.filter((item) => !item.available);
+
+      if (unavailableItems.length > 0) {
+        const names = unavailableItems.map((item) => item.name || 'Item').join(', ');
+        showNotification(`Insufficient stock for: ${names}`, 'error');
+        return;
+      }
+
+      setIsCheckoutModalOpen(true);
+    } catch (error) {
+      console.error('Failed to validate stock:', error);
+      showNotification('Failed to validate stock. Please try again.', 'error');
     }
   };
 
@@ -116,7 +135,7 @@ export const Merchandise = () => {
             <div className="flex justify-center">
               <Button
                 variant="primary"
-                onClick={() => setIsCheckoutModalOpen(true)}
+                onClick={handleOpenCheckout}
                 className="relative"
               >
                 <FaShoppingCart className="mr-2" />

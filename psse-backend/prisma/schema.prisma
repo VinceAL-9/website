@@ -17,6 +17,7 @@ model User {
   createdAt         DateTime @default(now())
   isVerified        Boolean  @default(false)
   verificationToken String?
+  refreshToken      String?
   orders            Order[]
 
   @@map("users")
@@ -69,7 +70,7 @@ model Order {
   contactNumber   String
   customerEmail   String
   totalAmount     Decimal     @db.Decimal(10, 2)
-  status          OrderStatus @default(PENDING_REVIEW)
+  status          OrderStatus @default(PENDING)
   paymentProofUrl String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -111,8 +112,8 @@ enum Category {
 }
 
 enum OrderStatus {
-  PENDING_REVIEW
-  AWAITING_PAYMENT
+  PENDING
+  PAID
   READY_PICKUP
   COMPLETED
   CANCELLED

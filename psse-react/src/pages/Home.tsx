@@ -62,7 +62,7 @@ function mapApiEventToEvent(apiEvent: ApiEvent): Event {
   };
 
   return {
-    id: String(apiEvent.id),
+    id: apiEvent.id,
     title: apiEvent.title,
     description: apiEvent.description,
     image: apiEvent.imageUrl,

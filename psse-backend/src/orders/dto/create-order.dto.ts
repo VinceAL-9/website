@@ -7,39 +7,41 @@ import {
   IsInt,
   Min,
   ArrayMinSize,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class OrderItemDto {
   @IsString()
   @IsNotEmpty()
-  productId: string;
+  @IsUUID()
+  productId!: string;
 
   @IsInt()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 }
 
 export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
-  customerName: string;
+  customerName!: string;
 
   @IsString()
   @IsNotEmpty()
-  studentId: string;
+  studentId!: string;
 
   @IsString()
   @IsNotEmpty()
-  contactNumber: string;
+  contactNumber!: string;
 
   @IsEmail()
   @IsNotEmpty()
-  customerEmail: string;
+  customerEmail!: string;
 
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
-  items: OrderItemDto[];
+  items!: OrderItemDto[];
 }

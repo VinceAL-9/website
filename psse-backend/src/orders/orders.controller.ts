@@ -16,10 +16,11 @@ import { CreateOrderDto, UpdateOrderDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { CurrentUser } from '../auth/decorators';
 import { Order } from '@prisma/client';
+import 'multer';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) { }
+  constructor(private readonly ordersService: OrdersService) {}
 
   /**
    * POST /orders - Create a new order (requires authentication)
@@ -28,7 +29,10 @@ export class OrdersController {
    */
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user: { id: string }): Promise<Order> {
+  create(
+    @Body() createOrderDto: CreateOrderDto,
+    @CurrentUser() user: { id: string },
+  ): Promise<Order> {
     return this.ordersService.create(createOrderDto, user.id);
   }
 
@@ -77,9 +81,17 @@ export class OrdersController {
     }
 
     // Validate file is an image
-    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validImageTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
     if (!validImageTypes.includes(file.mimetype)) {
-      throw new BadRequestException('File must be an image (jpg, jpeg, png, gif, or webp)');
+      throw new BadRequestException(
+        'File must be an image (jpg, jpeg, png, gif, or webp)',
+      );
     }
 
     return this.ordersService.uploadPaymentProof(id, file);

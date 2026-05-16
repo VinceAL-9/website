@@ -93,7 +93,7 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
       reset();
       setImagePreview(null);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handling is done globally in axios interceptor
       console.error('Error creating event:', error);
     } finally {

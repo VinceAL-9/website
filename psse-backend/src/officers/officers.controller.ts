@@ -1,11 +1,11 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Patch, 
-  Delete, 
-  Body, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -16,6 +16,7 @@ import { OfficersService } from './officers.service';
 import { CreateOfficerDto, UpdateOfficerDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { CloudinaryService } from '../cloudinary';
+import 'multer';
 
 @Controller('officers')
 export class OfficersController {
@@ -46,15 +47,25 @@ export class OfficersController {
     // If a file is uploaded, validate and upload it to Cloudinary
     if (file) {
       // Validate file is an image
-      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      const validImageTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+      ];
       if (!validImageTypes.includes(file.mimetype)) {
-        throw new BadRequestException('File must be an image (jpg, jpeg, png, or gif)');
+        throw new BadRequestException(
+          'File must be an image (jpg, jpeg, png, or gif)',
+        );
       }
 
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-officers');
+        const uploadResult = await this.cloudinaryService.uploadImage(
+          file,
+          'psse-officers',
+        );
         photoUrl = uploadResult.secure_url;
-      } catch (error) {
+      } catch {
         throw new BadRequestException('Failed to upload image to Cloudinary');
       }
     }
@@ -83,15 +94,25 @@ export class OfficersController {
     // If a file is uploaded, validate and upload it to Cloudinary
     if (file) {
       // Validate file is an image
-      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      const validImageTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+      ];
       if (!validImageTypes.includes(file.mimetype)) {
-        throw new BadRequestException('File must be an image (jpg, jpeg, png, or gif)');
+        throw new BadRequestException(
+          'File must be an image (jpg, jpeg, png, or gif)',
+        );
       }
 
       try {
-        const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-officers');
+        const uploadResult = await this.cloudinaryService.uploadImage(
+          file,
+          'psse-officers',
+        );
         photoUrl = uploadResult.secure_url;
-      } catch (error) {
+      } catch {
         throw new BadRequestException('Failed to upload image to Cloudinary');
       }
     }

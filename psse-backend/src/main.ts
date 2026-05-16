@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -9,6 +10,9 @@ async function bootstrap() {
 
   // Security headers with helmet
   app.use(helmet());
+
+  // Parse cookies for refresh token handling
+  app.use(cookieParser());
 
   // Enable CORS for React frontend (Vite default port)
   app.enableCors({
@@ -29,7 +33,9 @@ async function bootstrap() {
   // Swagger/OpenAPI configuration
   const config = new DocumentBuilder()
     .setTitle('PSSE Website API')
-    .setDescription('API documentation for the PSSE (Philippine Society of Power Engineers) Website')
+    .setDescription(
+      'API documentation for the PSSE (Philippine Society of Power Engineers) Website',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('auth', 'Authentication endpoints')
@@ -45,6 +51,8 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation available at: http://localhost:${port}/api`);
+  console.log(
+    `📚 Swagger documentation available at: http://localhost:${port}/api`,
+  );
 }
-bootstrap();
+void bootstrap();

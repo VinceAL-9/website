@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
 import { Category } from '@prisma/client';
-import { CreateProductDto, UpdateProductDto } from './dto';
+import { CheckStockItemDto, CreateProductDto, UpdateProductDto } from './dto';
 
 @Injectable()
 export class ProductsService {
@@ -54,5 +54,37 @@ export class ProductsService {
     return this.prisma.product.delete({
       where: { id },
     });
+  }
+
+  async checkStock(items: CheckStockItemDto[]) {
+    const productIds = items.map((item) => item.productId);
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+      },
+    });
+
+    const productMap = new Map(
+      products.map((product) => [product.id, product]),
+    );
+
+    return {
+      items: items.map((item) => {
+        const product = productMap.get(item.productId);
+        const currentStock = product?.stock ?? 0;
+
+        return {
+          productId: item.productId,
+          name: product?.name ?? null,
+          requestedQuantity: item.quantity,
+          currentStock,
+          available: currentStock >= item.quantity,
+        };
+      }),
+    };
   }
 }

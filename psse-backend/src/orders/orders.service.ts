@@ -1,15 +1,20 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma';
 import { CreateOrderDto, UpdateOrderDto } from './dto';
 import { Prisma, Order, OrderStatus } from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import 'multer';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   /**
    * Generates a human-readable reference ID for orders
@@ -18,14 +23,14 @@ export class OrdersService {
    */
   private generateReferenceId(): string {
     const now = new Date();
-    const timestamp = now.toISOString()
-      .replace(/[-:T]/g, '')
-      .slice(0, 14); // YYYYMMDDHHmmss
+    const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14); // YYYYMMDDHHmmss
 
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let randomSuffix = '';
     for (let i = 0; i < 4; i++) {
-      randomSuffix += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+      randomSuffix += randomChars.charAt(
+        Math.floor(Math.random() * randomChars.length),
+      );
     }
 
     return `ORD-${timestamp}-${randomSuffix}`;
@@ -42,7 +47,8 @@ export class OrdersService {
    * 5. If any step fails, the entire transaction rolls back (including stock changes)
    */
   async create(createOrderDto: CreateOrderDto, userId?: string) {
-    const { customerName, studentId, contactNumber, customerEmail, items } = createOrderDto;
+    const { customerName, studentId, contactNumber, customerEmail, items } =
+      createOrderDto;
 
     // Generate unique reference ID for this order
     const referenceId = this.generateReferenceId();
@@ -68,14 +74,16 @@ export class OrdersService {
 
         // Validate that the product exists
         if (!product) {
-          throw new NotFoundException(`Product with ID ${item.productId} not found`);
+          throw new NotFoundException(
+            `Product with ID ${item.productId} not found`,
+          );
         }
 
         // Step 3: Validate sufficient stock is available
         if (product.stock < item.quantity) {
           throw new BadRequestException(
             `Product "${product.name}" is out of stock. ` +
-            `Available: ${product.stock}, Requested: ${item.quantity}`
+              `Available: ${product.stock}, Requested: ${item.quantity}`,
           );
         }
 
@@ -94,7 +102,7 @@ export class OrdersService {
         // but handles concurrent edge cases where Prisma constraint might not catch it)
         if (updatedProduct.stock < 0) {
           throw new BadRequestException(
-            `Product "${product.name}" is out of stock. Unable to reserve requested quantity.`
+            `Product "${product.name}" is out of stock. Unable to reserve requested quantity.`,
           );
         }
 
@@ -111,7 +119,7 @@ export class OrdersService {
       }
 
       // Step 5: Create the Order with referenceId and all OrderItems
-      // Status is explicitly set to AWAITING_PAYMENT for new orders
+      // Status is explicitly set to PENDING for new orders
       const order = await tx.order.create({
         data: {
           referenceId,
@@ -124,7 +132,7 @@ export class OrdersService {
           contactNumber,
           customerEmail,
           totalAmount,
-          status: OrderStatus.AWAITING_PAYMENT,
+          status: OrderStatus.PENDING,
           // Create all order items in a single nested write
           orderItems: {
             create: orderItemsData,
@@ -231,7 +239,7 @@ export class OrdersService {
       existingOrder.status === OrderStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Cannot update order with status '${existingOrder.status}'. This status is final.`
+        `Cannot update order with status '${existingOrder.status}'. This status is final.`,
       );
     }
 
@@ -247,10 +255,15 @@ export class OrdersService {
     const deletePaymentProofFromCloudinary = async () => {
       if (existingOrder.paymentProofUrl) {
         try {
-          await this.cloudinaryService.deleteImage(existingOrder.paymentProofUrl);
+          await this.cloudinaryService.deleteImage(
+            existingOrder.paymentProofUrl,
+          );
         } catch (error) {
           // Log but don't fail the operation if Cloudinary deletion fails
-          console.error('Failed to delete payment proof from Cloudinary:', error);
+          console.error(
+            'Failed to delete payment proof from Cloudinary:',
+            error,
+          );
         }
       }
     };
@@ -284,60 +297,62 @@ export class OrdersService {
 
     // If cancelling or rejecting the order, RESTORE stock in a transaction
     if (shouldRestoreStock) {
-      return this.prisma.$transaction(async (tx) => {
-        // Restore stock for each order item
-        for (const item of existingOrder.orderItems) {
-          // Check if the product still exists before trying to restock
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-          });
-
-          // Only restore stock if product still exists (handle deleted products gracefully)
-          if (product) {
-            await tx.product.update({
+      return this.prisma
+        .$transaction(async (tx) => {
+          // Restore stock for each order item
+          for (const item of existingOrder.orderItems) {
+            // Check if the product still exists before trying to restock
+            const product = await tx.product.findUnique({
               where: { id: item.productId },
-              data: {
-                stock: {
-                  increment: item.quantity,
-                },
-              },
             });
-          } else {
-            // Log warning but don't fail - product may have been deleted
-            console.warn(
-              `Product with ID ${item.productId} no longer exists. ` +
-              `Cannot restore ${item.quantity} units of stock.`
-            );
-          }
-        }
 
-        // Update the order status
-        const updatedOrder = await tx.order.update({
-          where: { id },
-          data: updateOrderDto,
-          include: {
-            orderItems: {
-              include: {
-                product: {
-                  select: {
-                    id: true,
-                    name: true,
-                    category: true,
-                    imageUrl: true,
+            // Only restore stock if product still exists (handle deleted products gracefully)
+            if (product) {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: {
+                  stock: {
+                    increment: item.quantity,
+                  },
+                },
+              });
+            } else {
+              // Log warning but don't fail - product may have been deleted
+              console.warn(
+                `Product with ID ${item.productId} no longer exists. ` +
+                  `Cannot restore ${item.quantity} units of stock.`,
+              );
+            }
+          }
+
+          // Update the order status
+          const updatedOrder = await tx.order.update({
+            where: { id },
+            data: updateOrderDto,
+            include: {
+              orderItems: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      category: true,
+                      imageUrl: true,
+                    },
                   },
                 },
               },
             },
-          },
-        });
+          });
 
-        return updatedOrder;
-      }).then(async (updatedOrder) => {
-        // Delete payment proof from Cloudinary after successful transaction
-        // (done outside transaction as it's an external service)
-        await deletePaymentProofFromCloudinary();
-        return updatedOrder;
-      });
+          return updatedOrder;
+        })
+        .then(async (updatedOrder) => {
+          // Delete payment proof from Cloudinary after successful transaction
+          // (done outside transaction as it's an external service)
+          await deletePaymentProofFromCloudinary();
+          return updatedOrder;
+        });
     }
 
     // For non-final status changes, just update the order
@@ -389,14 +404,17 @@ export class OrdersService {
 
   /**
    * Uploads a payment proof image for an order.
-   * 
+   *
    * @param orderId - The ID of the order to upload payment proof for
    * @param file - The Express Multer file containing the image
    * @returns The updated Order record with paymentProofUrl set
    * @throws NotFoundException if the order does not exist
    * @throws BadRequestException if the image upload fails
    */
-  async uploadPaymentProof(orderId: string, file: Express.Multer.File): Promise<Order> {
+  async uploadPaymentProof(
+    orderId: string,
+    file: Express.Multer.File,
+  ): Promise<Order> {
     // Step 1: Find the order by ID
     const existingOrder = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -410,19 +428,24 @@ export class OrdersService {
     // Step 2: Upload the image to Cloudinary
     let paymentProofUrl: string;
     try {
-      const uploadResult = await this.cloudinaryService.uploadImage(file, 'psse-payment-proofs');
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        'psse-payment-proofs',
+      );
       paymentProofUrl = uploadResult.secure_url;
-    } catch (error) {
-      throw new BadRequestException('Failed to upload payment proof image to Cloudinary');
+    } catch {
+      throw new BadRequestException(
+        'Failed to upload payment proof image to Cloudinary',
+      );
     }
 
     // Step 3: Update the Order record with the payment proof URL
-    // Status remains AWAITING_PAYMENT (or is explicitly set to ensure consistency)
+    // Status moves to PAID after payment proof is submitted
     const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         paymentProofUrl,
-        status: OrderStatus.AWAITING_PAYMENT,
+        status: OrderStatus.PAID,
       },
       include: {
         orderItems: {
@@ -445,15 +468,15 @@ export class OrdersService {
 
   /**
    * Allows a user to cancel their own order.
-   * 
+   *
    * Conditions for cancellation:
    * 1. Order must exist
    * 2. Order must belong to the requesting user
    * 3. Order must not have a payment proof uploaded
    * 4. Order must not already be in a final status (COMPLETED/CANCELLED)
-   * 
+   *
    * Upon cancellation, stock is restored for all order items.
-   * 
+   *
    * @param orderId - The ID of the order to cancel
    * @param userId - The ID of the user requesting cancellation
    * @returns The updated Order with status CANCELLED
@@ -485,14 +508,14 @@ export class OrdersService {
       existingOrder.status === OrderStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Cannot cancel order with status '${existingOrder.status}'. This status is final.`
+        `Cannot cancel order with status '${existingOrder.status}'. This status is final.`,
       );
     }
 
     // Step 4: Check if payment proof has been uploaded
     if (existingOrder.paymentProofUrl) {
       throw new BadRequestException(
-        'Cannot cancel order after payment proof has been submitted. Please contact support.'
+        'Cannot cancel order after payment proof has been submitted. Please contact support.',
       );
     }
 
@@ -519,7 +542,7 @@ export class OrdersService {
           // Log warning but don't fail - product may have been deleted
           console.warn(
             `Product with ID ${item.productId} no longer exists. ` +
-            `Cannot restore ${item.quantity} units of stock.`
+              `Cannot restore ${item.quantity} units of stock.`,
           );
         }
       }
@@ -550,4 +573,3 @@ export class OrdersService {
     });
   }
 }
-
