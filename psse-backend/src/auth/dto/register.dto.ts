@@ -9,8 +9,8 @@ import {
 export class RegisterDto {
   @IsEmail({}, { message: 'Please provide a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
-  @Matches(/@cpu\.edu\.ph$/, {
-    message: 'Only @cpu.edu.ph email addresses are allowed',
+  @Matches(/^[a-zA-Z0-9._%+-]+@cpu\.edu\.ph$/, {
+    message: 'Registration is restricted to official university emails',
   })
   email!: string;
 

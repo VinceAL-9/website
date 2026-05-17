@@ -94,8 +94,9 @@ export const UserAuthProvider = ({ children }: UserAuthProviderProps) => {
 
     const register = useCallback(async (data: RegisterData) => {
         await authApi.register(data);
-        // After registration, user needs to login separately
-    }, []);
+        // Automatically login after successful registration
+        await login(data.email, data.password);
+    }, [login]);
 
     const value: UserAuthContextType = {
         user,
