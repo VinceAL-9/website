@@ -103,8 +103,16 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useUserAuth();
-  const [currentView, setCurrentView] = useState<AdminView>('events');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Derive current view from URL path (avoids setState-in-effect)
+  const currentView: AdminView = (() => {
+    const path = location.pathname;
+    if (path.includes('orders')) return 'orders';
+    if (path.includes('officers')) return 'officers';
+    if (path.includes('products')) return 'products';
+    return 'events';
+  })();
 
   // Events state
   const [events, setEvents] = useState<ApiEvent[]>([]);
@@ -145,33 +153,7 @@ export const Dashboard = () => {
   const [selectedProductImageFile, setSelectedProductImageFile] = useState<File | null>(null);
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
 
-  // Set view based on URL
-  useEffect(() => {
-    const path = location.pathname;
-    if (path.includes('orders')) {
-      setCurrentView('orders');
-    } else if (path.includes('officers')) {
-      setCurrentView('officers');
-    } else if (path.includes('products')) {
-      setCurrentView('products');
-    } else {
-      setCurrentView('events');
-    }
-  }, [location]);
-
-  // Load data based on current view
-  useEffect(() => {
-    if (currentView === 'events') {
-      loadEvents();
-    } else if (currentView === 'orders') {
-      loadOrders();
-    } else if (currentView === 'officers') {
-      loadOfficers();
-    } else if (currentView === 'products') {
-      loadProducts();
-    }
-  }, [currentView]);
-
+  // Data loading functions (declared before the useEffect that references them)
   const loadEvents = async () => {
     setEventsLoading(true);
     setEventsError(null);
@@ -214,6 +196,35 @@ export const Dashboard = () => {
     }
   };
 
+  const loadProducts = async () => {
+    setProductsLoading(true);
+    setProductsError(null);
+    try {
+      const data = await productsApi.getProducts();
+      setProducts(data);
+    } catch (err) {
+      setProductsError('Failed to load products. Please try again.');
+      console.error('Error loading products:', err);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  // Load data based on current view
+  /* eslint-disable react-hooks/set-state-in-effect -- Async data fetching triggered by view change is a legitimate effect pattern */
+  useEffect(() => {
+    if (currentView === 'events') {
+      loadEvents();
+    } else if (currentView === 'orders') {
+      loadOrders();
+    } else if (currentView === 'officers') {
+      loadOfficers();
+    } else if (currentView === 'products') {
+      loadProducts();
+    }
+  }, [currentView]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const handleLogout = () => {
     // Use context's logout to clear user state
     logout();
@@ -221,7 +232,6 @@ export const Dashboard = () => {
   };
 
   const handleViewChange = (view: AdminView) => {
-    setCurrentView(view);
     navigate(`/admin/dashboard/${view}`);
   };
 
@@ -445,19 +455,6 @@ export const Dashboard = () => {
   };
 
   // Product handlers
-  const loadProducts = async () => {
-    setProductsLoading(true);
-    setProductsError(null);
-    try {
-      const data = await productsApi.getProducts();
-      setProducts(data);
-    } catch (err) {
-      setProductsError('Failed to load products. Please try again.');
-      console.error('Error loading products:', err);
-    } finally {
-      setProductsLoading(false);
-    }
-  };
 
   const openAddProductModal = () => {
     setEditingProduct(null);

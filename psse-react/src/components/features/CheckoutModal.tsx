@@ -36,9 +36,9 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
 
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [formData, setFormData] = useState<CheckoutFormData>({
-    customerName: '',
-    studentId: '',
-    customerEmail: '',
+    customerName: user?.name || '',
+    studentId: user?.studentId || '',
+    customerEmail: user?.email || '',
     contactNumber: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +46,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
   const [createdOrder, setCreatedOrder] = useState<ApiOrder | null>(null);
 
   // Task D: Pre-fill form data from user profile when modal opens or user changes
+  /* eslint-disable react-hooks/set-state-in-effect -- Legitimate sync from props on modal open */
   useEffect(() => {
     if (isOpen && user) {
       setFormData((prev) => ({
@@ -53,10 +54,10 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
         customerName: user.name || '',
         studentId: user.studentId || '',
         customerEmail: user.email || '',
-        // contactNumber is not in user profile, keep it editable
       }));
     }
   }, [isOpen, user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

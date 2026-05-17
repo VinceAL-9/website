@@ -51,9 +51,11 @@ export const TransactionHistory = () => {
   }, [isAuthenticated]);
 
   // Fetch user's orders
+  /* eslint-disable react-hooks/set-state-in-effect -- Async data fetching on mount is a legitimate effect pattern */
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   /**
    * Handle file upload for payment proof
