@@ -26,7 +26,7 @@ This directory contains the backend for the Philippine Society of Software Engin
 - `prisma/`: Database schema definitions (`schema.prisma`) and migrations.
   - `schema.prisma`: The single source of truth for the database schema.
   - `migrations/`: Auto-generated SQL migrations.
-- `test/`: E2E test configuration.
+- `tests/`: Test suites configuration and implementation.
 
 ## Setup and Environment
 
@@ -43,15 +43,15 @@ This directory contains the backend for the Philippine Society of Software Engin
 - **Build for Production:** `npm run build`
 - **Lint Code:** `npm run lint`
 - **Format Code:** `npm run format` (Uses Prettier).
-- **Run Unit Tests:** `npm run test`
-- **Run E2E Tests:** `npm run test:e2e`
+- **Run Unit Tests:** `npm run test:unit`
+- **Run Integration Tests:** `npm run test:integration`
 
 ### Prisma Commands
 
-- **Generate Prisma Client:** `npx prisma generate` (Run this after schema changes).
-- **Create a Migration:** `npx prisma migrate dev` (Applies changes to dev DB and creates a migration file).
-- **Push Schema (No Migration History):** `npx prisma db push` (Useful for prototyping).
-- **Open Prisma Studio:** `npx prisma studio` (Web UI for viewing/editing data).
+- **Generate Prisma Client:** `npm run prisma:generate`
+- **Create a Migration:** `npm run prisma:migrate:dev`
+- **Push Schema:** `npm run prisma:push`
+- **Open Prisma Studio:** `npm run prisma:studio`
 
 ## Development Conventions
 

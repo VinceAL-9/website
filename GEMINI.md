@@ -52,6 +52,20 @@ npm install
 npm run start:dev
 ```
 
+### API Testing
+The backend utilizes **Jest** for both unit and integration testing, located in `psse-backend/tests`.
+
+- **Unit Tests:** Found in `tests/unit/`, focusing on isolated business logic within services.
+- **Integration Tests:** Found in `tests/integration/`, testing full controller-to-database flows. Mocks for external dependencies like Cloudinary and Mail are provided in `tests/mocks/`.
+
+**Running Tests:**
+```bash
+cd psse-backend
+npm run test
+npm run test:unit
+npm run test:integration
+```
+
 ## Development Conventions
 
 1. **Language:** TypeScript is used across both frontend and backend for end-to-end type safety. Ensure strict typing and avoid `any` wherever possible.
