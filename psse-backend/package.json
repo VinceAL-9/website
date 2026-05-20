@@ -17,7 +17,7 @@
     "test:unit": "jest --config ./tests/jest.config.ts --testPathPatterns=unit",
     "test:integration": "jest --config ./tests/jest.config.ts --testPathPatterns=integration --setupFilesAfterEnv \"<rootDir>/integration/setup.ts\" --runInBand",
     "test:watch": "jest --config ./tests/jest.config.ts --watch",
-    "test:cov": "jest --config ./tests/jest.config.ts --coverage",
+    "test:cov": "npm run test -- --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand --config ./tests/jest.config.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",

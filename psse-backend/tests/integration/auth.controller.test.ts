@@ -142,4 +142,109 @@ describe('AuthController (Integration)', () => {
       await request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
   });
+
+  describe('POST /auth/refresh', () => {
+    let refreshTokenCookie: string;
+
+    beforeAll(async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'integration@cpu.edu.ph',
+          password: 'Password123!',
+        });
+      const setCookieHeader = response.headers['set-cookie'] as string[];
+      refreshTokenCookie =
+        setCookieHeader.find((c: string) => c.startsWith('refresh_token=')) ||
+        '';
+    });
+
+    it('should refresh tokens if valid cookie is present', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', refreshTokenCookie)
+        .expect(200);
+
+      expect(response.body.access_token).toBeDefined();
+    });
+
+    it('should fail if no refresh token cookie is present', async () => {
+      await request(app.getHttpServer()).post('/auth/refresh').expect(401);
+    });
+  });
+
+  describe('POST /auth/logout', () => {
+    let accessToken: string;
+
+    beforeAll(async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'integration@cpu.edu.ph',
+          password: 'Password123!',
+        });
+      accessToken = response.body.access_token;
+    });
+
+    it('should logout and clear cookie', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      const setCookieHeader = response.headers['set-cookie'] as string[];
+      expect(setCookieHeader).toBeDefined();
+      const refreshCookie = setCookieHeader.find((c: string) =>
+        c.startsWith('refresh_token='),
+      );
+      expect(refreshCookie).toContain('Expires=Thu, 01 Jan 1970'); // Should be cleared
+    });
+  });
+
+  describe('POST /auth/resend-verification', () => {
+    beforeAll(async () => {
+      // Create an unverified user for testing resend verification
+      await prisma.user.deleteMany({
+        where: { email: 'unverified@cpu.edu.ph' },
+      });
+      await request(app.getHttpServer()).post('/auth/register').send({
+        email: 'unverified@cpu.edu.ph',
+        password: 'Password123!',
+        name: 'Unverified User',
+        studentId: '2020-54321',
+      });
+    });
+
+    afterAll(async () => {
+      await prisma.user.deleteMany({
+        where: { email: 'unverified@cpu.edu.ph' },
+      });
+    });
+
+    it('should resend verification email for an unverified user', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/resend-verification')
+        .send({ email: 'unverified@cpu.edu.ph' })
+        .expect(200);
+
+      expect(response.body.message).toContain(
+        'Verification email has been resent',
+      );
+    });
+
+    it('should fail if email is already verified', async () => {
+      // Using the originally verified integration user
+      await request(app.getHttpServer())
+        .post('/auth/resend-verification')
+        .send({ email: 'integration@cpu.edu.ph' })
+        .expect(400); // BadRequest
+    });
+
+    it('should fail if email is not found', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/resend-verification')
+        .send({ email: 'nobody@cpu.edu.ph' })
+        .expect(400); // BadRequest
+    });
+  });
 });

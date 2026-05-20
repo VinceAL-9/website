@@ -88,6 +88,25 @@ describe('OrdersController (Integration)', () => {
         .send(dto)
         .expect(400); // BadRequestException
     });
+
+    it('should fail if product does not exist', async () => {
+      const dto = {
+        customerName: 'Member User',
+        studentId: '2020-0003',
+        contactNumber: '09123456789',
+        customerEmail: 'member.orders@cpu.edu.ph',
+        // Valid UUID v4 that doesn't exist in DB
+        items: [
+          { productId: '550e8400-e29b-41d4-a716-446655440000', quantity: 1 },
+        ],
+      };
+
+      await request(app.getHttpServer())
+        .post('/orders')
+        .set('Authorization', `Bearer ${memberToken}`)
+        .send(dto)
+        .expect(404); // NotFoundException
+    });
   });
 
   describe('GET /orders', () => {

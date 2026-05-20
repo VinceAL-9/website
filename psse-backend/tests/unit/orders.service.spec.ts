@@ -112,6 +112,33 @@ describe('OrdersService', () => {
         NotFoundException,
       );
     });
+
+    it('should throw BadRequestException if stock drops below 0 during decrement', async () => {
+      const createDto = {
+        customerName: 'Test',
+        studentId: '123',
+        contactNumber: '123',
+        customerEmail: 'test@test.com',
+        items: [{ productId: 'p1', quantity: 2 }],
+      };
+
+      const mockProduct = {
+        id: 'p1',
+        name: 'Product',
+        stock: 5,
+        price: new Prisma.Decimal(100),
+      };
+      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      // Simulate race condition where stock becomes negative
+      mockPrismaService.product.update.mockResolvedValue({
+        ...mockProduct,
+        stock: -1,
+      });
+
+      await expect(service.create(createDto, 'user1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   describe('update', () => {
@@ -171,6 +198,31 @@ describe('OrdersService', () => {
       await expect(
         service.update('1', { status: OrderStatus.CANCELLED }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should skip restoring stock if product is missing and log warning', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const existingOrder = {
+        id: '1',
+        status: OrderStatus.PENDING,
+        orderItems: [{ productId: 'p1', quantity: 2 }],
+      };
+      mockPrismaService.order.findUnique.mockResolvedValue(existingOrder);
+      // Product no longer exists
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+      mockPrismaService.order.update.mockResolvedValue({
+        ...existingOrder,
+        status: OrderStatus.CANCELLED,
+      });
+
+      await service.update('1', { status: OrderStatus.CANCELLED });
+
+      expect(mockPrismaService.product.update).not.toHaveBeenCalled();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Product with ID p1 no longer exists'),
+      );
+      expect(mockPrismaService.order.update).toHaveBeenCalled();
+      consoleWarnSpy.mockRestore();
     });
   });
 
@@ -246,6 +298,31 @@ describe('OrdersService', () => {
       await expect(service.cancelOrderByUser('1', 'u1')).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it('should skip restoring stock if product is missing and log warning', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const existingOrder = {
+        id: '1',
+        userId: 'u1',
+        status: OrderStatus.PENDING,
+        paymentProofUrl: null,
+        orderItems: [{ productId: 'p1', quantity: 2 }],
+      };
+      mockPrismaService.order.findUnique.mockResolvedValue(existingOrder);
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+      mockPrismaService.order.update.mockResolvedValue({
+        ...existingOrder,
+        status: OrderStatus.CANCELLED,
+      });
+
+      await service.cancelOrderByUser('1', 'u1');
+
+      expect(mockPrismaService.product.update).not.toHaveBeenCalled();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Product with ID p1 no longer exists'),
+      );
+      consoleWarnSpy.mockRestore();
     });
   });
 });

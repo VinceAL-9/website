@@ -196,6 +196,123 @@ describe('AuthService', () => {
     });
   });
 
+  describe('resendVerificationEmail', () => {
+    it('should resend email if user is not verified', async () => {
+      const mockUser = { id: '1', email: 'test@test.com', isVerified: false };
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+
+      const result = await service.resendVerificationEmail('test@test.com');
+
+      expect(result.message).toContain('Verification email has been resent');
+      expect(mockPrismaService.user.update).toHaveBeenCalled();
+      expect(mailMock.sendUserConfirmation).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if user not found', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      await expect(
+        service.resendVerificationEmail('notfound@test.com'),
+      ).rejects.toThrow('No account found');
+    });
+
+    it('should throw BadRequestException if user already verified', async () => {
+      const mockUser = { id: '1', email: 'test@test.com', isVerified: true };
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      await expect(
+        service.resendVerificationEmail('test@test.com'),
+      ).rejects.toThrow('This email is already verified');
+    });
+  });
+
+  describe('refreshTokens', () => {
+    it('should refresh tokens if valid', async () => {
+      const mockUser = {
+        id: '1',
+        email: 'test@test.com',
+        role: 'MEMBER',
+        isVerified: true,
+        refreshToken: 'hashed_rt',
+      };
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: '1',
+        tokenType: 'refresh',
+      });
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockJwtService.signAsync.mockResolvedValue('new_token');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('new_hashed_rt');
+
+      const result = await service.refreshTokens('valid_rt');
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+      expect(mockPrismaService.user.update).toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException if refresh token is missing', async () => {
+      await expect(service.refreshTokens('')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if token verification fails', async () => {
+      mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
+      await expect(service.refreshTokens('invalid_rt')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if tokenType is not refresh', async () => {
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: '1',
+        tokenType: 'access',
+      });
+      await expect(
+        service.refreshTokens('access_token_passed_as_refresh'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException if user not found or no stored token', async () => {
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: '1',
+        tokenType: 'refresh',
+      });
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      await expect(service.refreshTokens('valid_rt')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if user is not verified', async () => {
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: '1',
+        tokenType: 'refresh',
+      });
+      const mockUser = {
+        id: '1',
+        isVerified: false,
+        refreshToken: 'hashed_rt',
+      };
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      await expect(service.refreshTokens('valid_rt')).rejects.toThrow(
+        'Please verify your email first',
+      );
+    });
+
+    it('should throw UnauthorizedException if token does not match hash', async () => {
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: '1',
+        tokenType: 'refresh',
+      });
+      const mockUser = { id: '1', isVerified: true, refreshToken: 'hashed_rt' };
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      await expect(service.refreshTokens('mismatched_rt')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
+
   describe('logout', () => {
     it('should clear refresh token', async () => {
       await service.logout('1');
