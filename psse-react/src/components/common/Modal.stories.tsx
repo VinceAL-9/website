@@ -57,3 +57,19 @@ export const ExtraLarge: Story = {
     title: 'Extra Large Modal',
   },
 };
+
+export const EdgeCaseLongText: Story = {
+  args: {
+    isOpen: true,
+    title: 'This is an exceptionally long modal title that is designed to test how the modal header handles extremely lengthy text that might potentially overflow the title container.',
+    onClose: () => {},
+    children: (
+      <div className="space-y-4">
+        <p>This modal body also contains a very large amount of text to test vertical overflow and scroll behavior within the modal content area when the text length exceeds typical boundaries.</p>
+        <div className="flex justify-end gap-3">
+          <Button variant="primary">Acknowledge</Button>
+        </div>
+      </div>
+    ),
+  },
+};

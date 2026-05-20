@@ -78,3 +78,9 @@ export const Disabled: Story = {
     children: 'Disabled Button',
   },
 };
+
+export const EdgeCaseLongText: Story = {
+  args: {
+    children: 'This is an extremely long button text to test the bounding box and text wrapping or truncation under Tailwind CSS v4 styling rules.',
+  },
+};

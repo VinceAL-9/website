@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { CheckoutModal } from './CheckoutModal';
 import { OrderProvider, UserAuthProvider, useOrders } from '../../context';
 import { http, HttpResponse, delay } from 'msw';
+import { MemoryRouter } from 'react-router-dom';
 
 // Helper component to pre-fill the cart
 const CartInitializer = ({ children, items }: { children: ReactNode, items: { id: string, qty: number }[] }) => {
@@ -71,13 +72,15 @@ const meta: Meta<typeof CheckoutModal> = {
   component: CheckoutModal,
   decorators: [
     (Story) => (
-      <UserAuthProvider>
-        <OrderProvider>
-          <CartInitializer items={[{ id: 'lan_001', qty: 2 }]}>
-            <Story />
-          </CartInitializer>
-        </OrderProvider>
-      </UserAuthProvider>
+      <MemoryRouter>
+        <UserAuthProvider>
+          <OrderProvider>
+            <CartInitializer items={[{ id: 'lan_001', qty: 2 }]}>
+              <Story />
+            </CartInitializer>
+          </OrderProvider>
+        </UserAuthProvider>
+      </MemoryRouter>
     ),
   ],
   parameters: {
@@ -136,11 +139,13 @@ export const EmptyCart: Story = {
   },
   decorators: [
     (Story) => (
-      <UserAuthProvider>
-        <OrderProvider>
-          <Story />
-        </OrderProvider>
-      </UserAuthProvider>
+      <MemoryRouter>
+        <UserAuthProvider>
+          <OrderProvider>
+            <Story />
+          </OrderProvider>
+        </UserAuthProvider>
+      </MemoryRouter>
     ),
   ],
   play: async ({ canvasElement }) => {
@@ -160,6 +165,15 @@ export const FullWorkflow: Story = {
     await waitForText(canvasElement, /Shopping Cart/i);
     getButtonByText(canvasElement, /Proceed to Checkout/i).click();
     await waitForText(canvasElement, /Customer Information/i);
+
+    // Wait a brief moment for any focus transition animations
+    await sleep(100);
+
+    // Assert that focus has moved correctly (e.g. to the first input field)
+    const firstInput = canvasElement.querySelector('input[name="customerName"]') as HTMLInputElement;
+    if (document.activeElement !== firstInput && !canvasElement.contains(document.activeElement)) {
+       throw new Error('Focus transition failed. Document active element is not within the modal or input.');
+    }
 
     setInputValue(canvasElement, 'customerName', 'John Doe');
     setInputValue(canvasElement, 'studentId', '2021-12345');

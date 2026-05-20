@@ -57,3 +57,10 @@ export const Danger: Story = {
     children: 'Danger',
   },
 };
+
+export const EdgeCaseLongText: Story = {
+  args: {
+    variant: 'primary',
+    children: 'This is a very long badge text to test bounding box',
+  },
+};

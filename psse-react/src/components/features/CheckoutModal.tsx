@@ -300,6 +300,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
               value={formData.customerName}
               onChange={handleFormChange}
               readOnly={!!user}
+              autoFocus
               className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               required
             />

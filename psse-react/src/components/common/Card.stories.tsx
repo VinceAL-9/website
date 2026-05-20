@@ -52,3 +52,18 @@ export const NoHover: Story = {
     ),
   },
 };
+
+export const EdgeCaseLongText: Story = {
+  args: {
+    children: (
+      <>
+        <CardHeader>
+          <h3 className="text-xl font-bold">This is an extremely long card title meant to test the text wrapping capabilities and bounding box limits of the card header component.</h3>
+        </CardHeader>
+        <CardBody>
+          <p className="text-gray-600">This is a paragraph with an exceptionally large amount of continuous text that should wrap correctly within the card body without overflowing the container or breaking the layout.</p>
+        </CardBody>
+      </>
+    ),
+  },
+};

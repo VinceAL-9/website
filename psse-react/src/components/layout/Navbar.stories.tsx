@@ -2,17 +2,20 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Navbar } from './Navbar';
 import { UserAuthProvider } from '../../context';
 import { http, HttpResponse } from 'msw';
+import { MemoryRouter } from 'react-router-dom';
 
 const meta: Meta<typeof Navbar> = {
   title: 'Layout/Navbar',
   component: Navbar,
   decorators: [
     (Story) => (
-      <UserAuthProvider>
-        <div className="min-h-50">
-          <Story />
-        </div>
-      </UserAuthProvider>
+      <MemoryRouter>
+        <UserAuthProvider>
+          <div className="min-h-50">
+            <Story />
+          </div>
+        </UserAuthProvider>
+      </MemoryRouter>
     ),
   ],
   parameters: {
