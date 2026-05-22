@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,6 +15,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   secondary: 'bg-psse-primary hover:bg-psse-light text-white',
   outline: 'border-2 border-white text-white hover:bg-white/10',
   ghost: 'text-gray-700 hover:bg-gray-100',
+  danger: 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -22,6 +23,8 @@ const sizeStyles: Record<ButtonSize, string> = {
   md: 'px-4 py-2 text-base',
   lg: 'px-6 py-3 text-lg',
 };
+
+const MAX_BUTTON_LENGTH = 15;
 
 export const Button = ({
   variant = 'primary',
@@ -32,6 +35,10 @@ export const Button = ({
   disabled,
   ...props
 }: ButtonProps) => {
+  const displayContent = typeof children === 'string' && children.length > MAX_BUTTON_LENGTH
+    ? `${children.slice(0, MAX_BUTTON_LENGTH)}...`
+    : children;
+
   return (
     <button
       className={`
@@ -46,9 +53,10 @@ export const Button = ({
         ${className}
       `}
       disabled={disabled}
+      title={typeof children === 'string' ? children : undefined}
       {...props}
     >
-      {children}
+      {displayContent}
     </button>
   );
 };

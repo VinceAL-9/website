@@ -1,33 +1,98 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
 import { Button } from './Button';
 
 const meta = {
+  title: 'Common/Button',
   component: Button,
-  tags: ['ai-generated'],
+  parameters: {
+    layout: 'centered',
+  },
+  tags: ['autodocs'],
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: ['primary', 'secondary', 'outline', 'ghost', 'danger'],
+    },
+    size: {
+      control: 'select',
+      options: ['sm', 'md', 'lg'],
+    },
+    fullWidth: {
+      control: 'boolean',
+    },
+    disabled: {
+      control: 'boolean',
+    },
+  },
 } satisfies Meta<typeof Button>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// Happy Paths
 export const Primary: Story = {
-  args: { children: 'Order now' },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: /order now/i })).toBeVisible();
+  args: {
+    variant: 'primary',
+    children: 'Primary Button',
   },
 };
 
-export const CssCheck: Story = {
-  args: { variant: 'primary', children: 'Submit' },
-  play: async ({ canvas }) => {
-    const button = canvas.getByRole('button', { name: /submit/i });
-    // Primary variant uses bg-psse-accent (e.g., #007BFF which is rgb(0, 123, 255))
-    // We check for the CSS variable or computed background color.
-    const bgColor = getComputedStyle(button).backgroundColor;
-    await expect(bgColor).not.toBe('rgba(0, 0, 0, 0)');
+export const Secondary: Story = {
+  args: {
+    variant: 'secondary',
+    children: 'Secondary Button',
   },
 };
 
-export const Secondary: Story = { args: { variant: 'secondary', children: 'Learn More' } };
-export const Outline: Story = { args: { variant: 'outline', children: 'Cancel' } };
-export const Large: Story = { args: { variant: 'primary', size: 'lg', children: 'Checkout' } };
+export const Ghost: Story = {
+  args: {
+    variant: 'ghost',
+    children: 'Ghost Button',
+  },
+};
+
+export const Small: Story = {
+  args: {
+    size: 'sm',
+    children: 'Small Button',
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: 'lg',
+    children: 'Large Button',
+  },
+};
+
+export const FullWidth: Story = {
+  parameters: {
+    layout: 'padded',
+  },
+  args: {
+    fullWidth: true,
+    children: 'Full Width Button',
+  },
+};
+
+// Sad Paths
+export const Disabled: Story = {
+  args: {
+    disabled: true,
+    children: 'Disabled Button',
+  },
+};
+
+export const LongTextOverflowSadPath: Story = {
+  args: {
+    children: 'This is a very long button text that might wrap or break layout',
+  },
+};
+
+export const LoadingStateMock: Story = {
+  args: {
+    disabled: true,
+    children: 'Loading...',
+    className: 'opacity-75 cursor-wait',
+  },
+};

@@ -15,7 +15,13 @@ const variantStyles: Record<BadgeVariant, string> = {
   danger: 'bg-red-500 text-white',
 };
 
+const MAX_BADGE_LENGTH = 20;
+
 export const Badge = ({ variant = 'primary', children, className = '' }: BadgeProps) => {
+  const displayContent = typeof children === 'string' && children.length > MAX_BADGE_LENGTH
+    ? `${children.slice(0, MAX_BADGE_LENGTH)}...`
+    : children;
+
   return (
     <span
       className={`
@@ -24,8 +30,9 @@ export const Badge = ({ variant = 'primary', children, className = '' }: BadgePr
         ${variantStyles[variant]}
         ${className}
       `}
+      title={typeof children === 'string' ? children : undefined}
     >
-      {children}
+      {displayContent}
     </span>
   );
 };
