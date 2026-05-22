@@ -49,8 +49,8 @@ export const ProductCard = ({ product, onOrder, onAddToCart, showPurchaseOptions
         )}
       </div>
       <CardBody className="flex-1 flex flex-col">
-        <h6 className="font-semibold text-gray-900 mb-2">{product.name}</h6>
-        <p className="text-gray-600 text-sm flex-1">{product.description}</p>
+        <h6 className="font-semibold text-gray-900 mb-2 truncate">{product.name}</h6>
+        <p className="text-gray-600 text-sm flex-1 line-clamp-3 wrap-break-words">{product.description}</p>
         <div className="mt-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xl font-bold text-psse-accent">₱{product.price}</span>

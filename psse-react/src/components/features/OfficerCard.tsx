@@ -7,7 +7,7 @@ interface OfficerCardProps {
 export const OfficerCard = ({ officer }: OfficerCardProps) => {
   return (
     <div className="group h-full">
-      <div className="bg-psse-dark rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl h-full min-h-[180px] flex flex-col">
+      <div className="bg-psse-dark rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl h-full min-h-45 flex flex-col">
         <div className="p-4 text-center flex-1 flex flex-col justify-center items-center">
           {/* Photo container with fixed size */}
           <div className="mb-3 shrink-0">
@@ -21,17 +21,17 @@ export const OfficerCard = ({ officer }: OfficerCardProps) => {
             />
           </div>
           {/* Text content with fixed height and overflow handling */}
-          <div className="w-full min-h-[48px] flex flex-col justify-center">
+          <div className="w-full min-h-12 flex flex-col justify-center">
             {officer.name && (
               <p
-                className="text-psse-accent font-semibold text-xs leading-tight mb-1 line-clamp-2 break-words px-1"
+                className="text-psse-accent font-semibold text-xs leading-tight mb-1 line-clamp-2 wrap-break-word px-1"
                 title={officer.name}
               >
                 {officer.name}
               </p>
             )}
             <h6
-              className="text-white font-medium text-xs leading-tight line-clamp-2 break-words px-1"
+              className="text-white font-medium text-xs leading-tight line-clamp-2 wrap-break-word px-1"
               title={officer.title}
             >
               {officer.title}

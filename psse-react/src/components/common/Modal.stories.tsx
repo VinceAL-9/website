@@ -49,6 +49,7 @@ export const Default: Story = {
   render: (args) => <ModalWrapper {...args} />,
   args: {
     title: 'Example Modal',
+
     children: (
       <div className="space-y-4">
         <p className="text-gray-600">
@@ -60,6 +61,8 @@ export const Default: Story = {
         </div>
       </div>
     ),
+
+    isOpen: true
   },
 };
 
@@ -74,6 +77,8 @@ export const WithoutTitle: Story = {
         <Button>Continue</Button>
       </div>
     ),
+
+    isOpen: true
   },
 };
 
@@ -82,6 +87,7 @@ export const SmallSize: Story = {
   args: {
     title: 'Confirm Action',
     size: 'sm',
+
     children: (
       <div className="space-y-4">
         <p className="text-gray-600">Are you sure you want to proceed? This action cannot be undone.</p>
@@ -91,6 +97,8 @@ export const SmallSize: Story = {
         </div>
       </div>
     ),
+
+    isOpen: true
   },
 };
 
@@ -99,6 +107,7 @@ export const ExtraLargeSize: Story = {
   args: {
     title: 'Detailed Information',
     size: 'xl',
+
     children: (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center border border-dashed border-gray-300">
@@ -115,6 +124,8 @@ export const ExtraLargeSize: Story = {
         </div>
       </div>
     ),
+
+    isOpen: true
   },
 };
 
@@ -123,6 +134,7 @@ export const LongContentScrollSadPath: Story = {
   render: (args) => <ModalWrapper {...args} />,
   args: {
     title: 'Terms and Conditions',
+
     children: (
       <div className="space-y-4">
         <p className="font-semibold text-gray-900">Please read the following carefully. The modal should scroll gracefully.</p>
@@ -133,5 +145,7 @@ export const LongContentScrollSadPath: Story = {
         ))}
       </div>
     ),
+
+    isOpen: true
   },
 };
