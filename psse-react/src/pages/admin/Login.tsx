@@ -33,12 +33,23 @@ export const Login = () => {
       await login(email, password);
       // The useEffect above will handle the redirect when user state updates
     } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        // Handle axios error response properly by checking it first
+        const axiosError = err as { response?: { data?: { message?: string | string[] } } };
+        const message = axiosError.response?.data?.message;
+        if (message) {
+          setError(Array.isArray(message) ? message.join(', ') : message);
+          return;
+        }
+      }
+      
       if (err instanceof Error) {
-        setError(err.message || 'Invalid credentials. Please try again.');
-      } else if (typeof err === 'object' && err !== null) {
-        // Handle axios error response
-        const axiosError = err as { response?: { data?: { message?: string } } };
-        setError(axiosError.response?.data?.message || 'Invalid credentials. Please try again.');
+        // Avoid exposing generic Axios "Request failed" errors directly if possible
+        if (err.message.includes('Request failed with status code')) {
+          setError('Invalid credentials. Please try again.');
+        } else {
+          setError(err.message);
+        }
       } else {
         setError('Invalid credentials. Please try again.');
       }
