@@ -1,77 +1,71 @@
 # PSSE Organization Website
 
-This repository contains the full-stack codebase for the Philippine Society of Software Engineers (PSSE) website. It is structured as a monorepo with separate frontend and backend directories.
+## Project Overview
+This repository contains the full-stack codebase for the Philippine Society of Software Engineers (PSSE) website. It is structured as a monorepo containing both a React frontend and a NestJS backend.
 
-## Project Architecture
+**Main Technologies:**
+- **Frontend (`/psse-react`)**: React 19, TypeScript, Vite 8, Tailwind CSS v4, React Router v7, React Hook Form, Zod, and Axios.
+- **Backend (`/psse-backend`)**: NestJS 11, TypeScript, Prisma ORM, PostgreSQL, Passport.js (JWT), Swagger, Cloudinary, and Nodemailer.
 
-### Frontend (`/psse-react`)
-A modern web application built with React, TypeScript, Vite, and Tailwind CSS.
+**Architecture:**
+The application uses a decoupled client-server architecture. The frontend is a modern Single Page Application (SPA) that communicates with the backend via a RESTful API. The backend handles business logic, database interactions, authentication, and external service integrations (like Cloudinary for images and Resend for emails).
 
-**Key Technologies:**
-- **React 19** with functional components and hooks
-- **Vite** for fast build tooling and development server
-- **Tailwind CSS v4** for utility-first styling
-- **React Router v7** for client-side routing
-- **React Hook Form & Zod** for form state management and validation
-- **Axios** for API communication
+## Building and Running
 
-**Directory Structure:**
-- `src/components/`: Reusable UI components organized by `common`, `features`, and `layout`.
-- `src/pages/`: Main route components (Home, About, Events, Merchandise, Admin/User dashboards).
-- `src/context/`: React Context providers for global state (e.g., UserAuth, Orders).
-- `src/services/`: API integration layer.
+### Prerequisites
+- Node.js (v18 or higher) and npm
+- PostgreSQL (local or cloud like Neon.tech)
+- Cloudinary account (for image uploads)
+- Resend account (optional, for emails)
 
-**Running the Frontend:**
-```bash
-cd psse-react
-npm install
-npm run dev
-```
+### Backend Setup (`/psse-backend`)
+1. **Install Dependencies:**
+   ```bash
+   cd psse-backend
+   npm install
+   ```
+2. **Environment Variables:**
+   Copy `.env.example` to `.env` and configure `DATABASE_URL`, `JWT_SECRET`, `CLOUDINARY_*`, and `MAIL_*`.
+3. **Database Setup:**
+   ```bash
+   npx prisma migrate dev
+   ```
+4. **Key Commands:**
+   - **Start Dev Server:** `npm run start:dev` (http://localhost:3000)
+   - **Build:** `npm run build`
+   - **Unit Tests:** `npm run test:unit`
+   - **Integration Tests:** `npm run test:integration`
+   - **Format Code:** `npm run format`
+   - **Lint Code:** `npm run lint`
+   - **Prisma Studio:** `npm run prisma:studio`
 
-### Backend (`/psse-backend`)
-A progressive Node.js server built with the NestJS framework and Prisma ORM.
-
-**Key Technologies:**
-- **NestJS 11** for a modular, scalable backend architecture
-- **Prisma ORM** with PostgreSQL (`@prisma/adapter-pg`)
-- **Passport & JWT** for authentication and authorization
-- **Swagger** for API documentation
-- **Cloudinary** for image uploading
-- **Nodemailer** with Handlebars for email sending
-
-**Directory Structure:**
-- `src/auth/`: Authentication logic, strategies, and guards.
-- `src/users/`, `src/products/`, `src/orders/`, `src/events/`, `src/officers/`: Domain-specific modules with controllers and services.
-- `src/prisma/`: Prisma service integration.
-- `prisma/`: Prisma schema definition and migration files.
-
-**Running the Backend:**
-```bash
-cd psse-backend
-npm install
-npm run start:dev
-```
-
-### API Testing
-The backend utilizes **Jest** for both unit and integration testing, located in `psse-backend/tests`.
-
-- **Unit Tests:** Found in `tests/unit/`, focusing on isolated business logic within services.
-- **Integration Tests:** Found in `tests/integration/`, testing full controller-to-database flows. Mocks for external dependencies like Cloudinary and Mail are provided in `tests/mocks/`.
-
-**Running Tests:**
-```bash
-cd psse-backend
-npm run test
-npm run test:unit
-npm run test:integration
-```
+### Frontend Setup (`/psse-react`)
+1. **Install Dependencies:**
+   ```bash
+   cd psse-react
+   npm install
+   ```
+2. **Environment Variables:**
+   Copy `.env.example` to `.env`. `VITE_API_URL` should point to the backend (default: `http://localhost:3000/`).
+3. **Key Commands:**
+   - **Start Dev Server:** `npm run dev` (http://localhost:5173)
+   - **Build:** `npm run build`
+   - **Preview Build:** `npm run preview`
+   - **Lint Code:** `npm run lint`
+   - **Start Storybook:** `npm run storybook`
+   - **Pre-deployment Checks:** `npm run all-prechecks`
 
 ## Development Conventions
 
-1. **Language:** TypeScript is used across both frontend and backend for end-to-end type safety. Ensure strict typing and avoid `any` wherever possible.
-2. **Package Management:** Both projects use `npm`. Ensure you are installing dependencies in the correct subdirectory.
-3. **Formatting & Linting:** 
-   - Backend: Uses Prettier and ESLint (`npm run format`, `npm run lint`).
-   - Frontend: Uses ESLint (`npm run lint`).
-4. **Environment Variables:** Both projects require their own `.env` files. Refer to `.env.example` in each directory for required variables (e.g., Database URLs, JWT secrets, Cloudinary credentials).
-5. **Database Migrations:** When making schema changes in Prisma (`psse-backend/prisma/schema.prisma`), run `npx prisma migrate dev` to generate and apply migrations locally.
+- **Language:** TypeScript is strictly used across both frontend and backend for end-to-end type safety. Avoid using `any`.
+- **Package Management:** Use `npm` and ensure commands are run in their respective subdirectories (`/psse-react` or `/psse-backend`).
+- **Code Style & Formatting:** 
+  - Backend uses Prettier and ESLint.
+  - Frontend uses an ESLint flat config. 
+  - Ensure all code passes linting before committing.
+- **Component-Driven Development:** The frontend utilizes Storybook to develop and test UI components in isolation (create `.stories.tsx` alongside components).
+- **Backend Architecture:** Follows the standard NestJS modular architecture (Controllers, Services, Modules). DTOs must be validated using `class-validator` and `class-transformer`.
+- **API Documentation:** The backend uses `@nestjs/swagger` decorators to maintain live OpenAPI documentation accessible at `/api`.
+- **Testing Practices:** 
+  - Backend relies on Jest for both isolated unit tests and full-flow integration tests.
+  - Frontend relies on Storybook coupled with Vitest, Playwright, and Mock Service Worker (MSW) for testing components.

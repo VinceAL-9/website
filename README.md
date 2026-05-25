@@ -102,12 +102,28 @@ You now have the PSSE website running locally.
 
 ---
 
+## 🧪 Testing
+
+The project uses robust testing frameworks to ensure code quality across the stack.
+
+### Backend Testing
+The backend utilizes **Jest** for testing.
+- **Unit Tests:** Focus on isolated business logic.
+- **Integration Tests:** Test full controller-to-database flows with mocked external dependencies.
+
+### Frontend Testing
+The frontend utilizes **Storybook** for component-driven development and visual testing, coupled with **Vitest** and **Playwright** for component testing, and **MSW** (Mock Service Worker) for mocking API requests.
+
+---
+
 ## 📚 Useful Commands
 
 ### Backend (`/psse-backend`)
 - `npm run start:dev` - Start development server with hot-reload
 - `npm run format` - Format code using Prettier
 - `npm run lint` - Run ESLint
+- `npm run test:unit` - Run unit tests (Jest)
+- `npm run test:integration` - Run integration tests (Jest)
 - `npx prisma migrate dev` - Create and apply a new migration
 - `npx prisma studio` - Open the Prisma visual database browser
 
@@ -115,3 +131,5 @@ You now have the PSSE website running locally.
 - `npm run dev` - Start Vite development server
 - `npm run build` - Build for production
 - `npm run lint` - Run ESLint
+- `npm run storybook` - Start Storybook for UI component testing
+- `npm run all-prechecks` - Run linting, Storybook build, and application build
