@@ -1,62 +1,77 @@
-# PSSE Website Frontend (psse-react)
+# PSSE Organization Website - Frontend (`/psse-react`)
 
-## Project Overview
+This directory contains the modern React-based frontend for the Philippine Society of Software Engineers (PSSE) website. It interacts with a separate backend API and provides a user-friendly interface for organization members and guests.
 
-This directory contains the frontend application for the **Philippine Society of Software Engineers (PSSE)** website. It is a modern, single-page web application designed with a responsive, mobile-first approach.
+## Project Architecture & Tech Stack
 
-**Key Technologies:**
-- **React 19** - UI library with functional components and hooks
-- **TypeScript** - For end-to-end type safety
-- **Vite** - Fast build tooling and development server
-- **Tailwind CSS v4** - Utility-first styling framework
-- **React Router v7** - Client-side routing
-- **React Hook Form & Zod** - Form state management and schema validation
-- **Axios** - For API communication with the backend
+This is a modern React Single Page Application (SPA) built with performance and developer experience in mind.
 
-## Directory Structure
+*   **Core:** React 19 (functional components and hooks) with TypeScript for end-to-end type safety.
+*   **Build Tooling:** Vite 8 for fast development server and optimized production builds.
+*   **Styling:** Tailwind CSS v4 (`@tailwindcss/vite` plugin).
+*   **Routing:** React Router v7 (`react-router-dom`).
+*   **Forms & Validation:** React Hook Form (`react-hook-form`) coupled with Zod (`zod`).
+*   **Data Fetching:** Axios.
+*   **UI Components:** Component-driven development architecture.
+*   **Mocking:** MSW (Mock Service Worker) for mocking API requests.
 
-The project follows a modular structure inside the `src/` directory:
+### Directory Structure
 
-- `components/` - Reusable UI components, organized into:
-  - `common/` - Generic UI elements (Buttons, Cards, Modals, Badges).
-  - `features/` - Domain-specific components (EventCards, OfficerCards, CheckoutModals).
-  - `layout/` - Structural components (Navbar, Footer, PageLayout).
-- `pages/` - Main route components, including public views (Home, About, Events, Merchandise) and dashboard views (admin/, user/).
-- `context/` - React Context providers for global state (e.g., `UserAuthContext`, `OrderContext`).
-- `data/` - Static fallback or initial data.
-- `hooks/` - Custom React hooks (e.g., `useScrollAnimation`).
-- `lib/` - Utility functions and configured library instances (e.g., Axios instance).
-- `services/` - API integration and communication layer (`api.ts`).
-- `types/` - Shared TypeScript interfaces and type definitions.
-
-**Note:** The `@` alias is configured to point to the `src/` directory (e.g., `import { Button } from '@/components/common/Button'`).
+*   `src/components/`: Reusable UI components.
+    *   `common/`: Generic UI elements (Button, Badge, Card, Modal).
+    *   `features/`: Domain-specific components (OfficerCard, EventCard).
+    *   `layout/`: Structural layout components (Navbar, Footer, PageLayout).
+*   `src/pages/`: Main application routes (Home, About, Events, Merchandise).
+*   `src/context/`: React Context providers for global state management.
+*   `src/hooks/`: Custom React hooks.
+*   `src/lib/`: Utility functions and library configurations (e.g., Axios setup).
+*   `src/services/`: API integration layer.
+*   `src/types/`: TypeScript interface and type definitions.
+*   `.storybook/`: Storybook configuration.
 
 ## Building and Running
 
-Commands are run using `npm`:
+Ensure you are in the `psse-react` directory before running these commands.
 
 ```bash
 # Install dependencies
 npm install
 
-# Start the development server
+# Start development server
 npm run dev
 
 # Build for production
 npm run build
 
-# Run ESLint to check for code issues
-npm run lint
-
-# Preview the production build locally
+# Preview production build locally
 npm run preview
 ```
 
+## Testing & Quality Assurance
+
+The project heavily utilizes Storybook and Vitest for testing and component isolation.
+
+```bash
+# Run ESLint to analyze code quality
+npm run lint
+
+# Start Storybook for component development and manual testing
+npm run storybook
+
+# Build Storybook static files
+npm run build-storybook
+
+# Run all pre-deployment checks (Linting, Storybook build, Application build)
+npm run all-prechecks
+```
+
+*Note: The project is configured with `@storybook/addon-vitest` to run tests on stories using Vitest and Playwright (Chromium).*
+
 ## Development Conventions
 
-1. **TypeScript & Types:** Ensure strict typing across the application. Avoid using `any`. Place shared types in `src/types/`.
-2. **Styling:** Use Tailwind CSS utility classes for styling. Global styles and Tailwind configuration are located in `src/index.css` and `vite.config.ts`.
-3. **State Management:** Use local state (useState, useReducer) for component-level state and React Context for global state (auth, cart/orders).
-4. **Form Handling:** Forms should be implemented using `react-hook-form` and validated using `zod` schemas.
-5. **API Calls:** Use the configured Axios instance in `src/lib/axios.ts` or services in `src/services/` for API requests.
-6. **Linting:** Code must pass ESLint checks (`npm run lint`). Standard React hooks rules and TypeScript guidelines apply.
+1.  **TypeScript First:** Use strict TypeScript. Define interfaces and types in `src/types/` or within the relevant component files.
+2.  **Path Aliasing:** Use the `@` alias to import from the `src` directory (e.g., `import Button from '@/components/common/Button'`).
+3.  **Styling:** Utilize Tailwind CSS utility classes. Avoid writing custom CSS unless absolutely necessary (which would go in `src/index.css`).
+4.  **Component Driven Development:** Create `.stories.tsx` files alongside your components (e.g., `Button.tsx` and `Button.stories.tsx`) to document and test UI states in isolation.
+5.  **Linting:** The project uses an ESLint flat config (`eslint.config.js`). Ensure code passes `npm run lint` before committing.
+6.  **Mocking:** Leverage MSW for development without a live backend or for isolated component testing in Storybook.
