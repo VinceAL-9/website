@@ -137,7 +137,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 };
 
 // Context
-const OrderContext = createContext<OrderContextType | undefined>(undefined);
+// eslint-disable-next-line react-refresh/only-export-components
+export const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 // Provider
 interface OrderProviderProps {

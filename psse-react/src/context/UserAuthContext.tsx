@@ -29,7 +29,8 @@ interface RegisterData {
 
 const USER_TOKEN_KEY = 'user_access_token';
 
-const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined);
+// eslint-disable-next-line react-refresh/only-export-components
+export const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined);
 
 interface UserAuthProviderProps {
     children: ReactNode;
@@ -94,9 +95,9 @@ export const UserAuthProvider = ({ children }: UserAuthProviderProps) => {
 
     const register = useCallback(async (data: RegisterData) => {
         await authApi.register(data);
-        // Automatically login after successful registration
-        await login(data.email, data.password);
-    }, [login]);
+        // Do not automatically login here because the user must verify their email first.
+        // The UserRegister component will handle showing the success screen.
+    }, []);
 
     const value: UserAuthContextType = {
         user,

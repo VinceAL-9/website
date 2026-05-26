@@ -57,15 +57,25 @@ export const UserLogin = () => {
             await login(email, password);
             navigate('/');
         } catch (err: unknown) {
-            if (err instanceof Error) {
-                const errorMsg = err.message || 'Invalid credentials. Please try again.';
-                setError(errorMsg);
-                // Check if error is about email verification
-                if (errorMsg.toLowerCase().includes('verify')) {
-                    setNeedsVerification(true);
+            let errorMsg = 'Invalid credentials. Please try again.';
+            
+            if (err && typeof err === 'object' && 'response' in err) {
+                const axiosError = err as { response?: { data?: { message?: string | string[] } } };
+                const message = axiosError.response?.data?.message;
+                if (message) {
+                    errorMsg = Array.isArray(message) ? message.join(', ') : message;
                 }
-            } else {
-                setError('Invalid credentials. Please try again.');
+            } else if (err instanceof Error) {
+                if (!err.message.includes('Request failed with status code')) {
+                    errorMsg = err.message;
+                }
+            }
+
+            setError(errorMsg);
+            
+            // Check if error is about email verification
+            if (errorMsg.toLowerCase().includes('verify')) {
+                setNeedsVerification(true);
             }
         } finally {
             setIsLoading(false);

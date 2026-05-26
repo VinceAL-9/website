@@ -27,6 +27,10 @@ export const VerifyEmail = () => {
                 return;
             }
 
+            if (isMounted) {
+                setState('loading');
+            }
+
             // Prevent duplicate calls
             if (hasVerified) {
                 return;

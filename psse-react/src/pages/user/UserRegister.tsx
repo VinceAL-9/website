@@ -83,22 +83,21 @@ export const UserRegister = () => {
 
             setIsSuccess(true);
         } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message || 'Registration failed. Please try again.');
-            } else if (typeof err === 'object' && err !== null && 'response' in err) {
+            let errorMsg = 'Registration failed. Please try again.';
+            
+            if (err && typeof err === 'object' && 'response' in err) {
                 const axiosError = err as { response?: { data?: { message?: string | string[] } } };
-                const responseMessage = axiosError.response?.data?.message;
-
-                if (Array.isArray(responseMessage)) {
-                    setError(responseMessage.join(', '));
-                } else if (typeof responseMessage === 'string') {
-                    setError(responseMessage);
-                } else {
-                    setError('Registration failed. Please try again.');
+                const message = axiosError.response?.data?.message;
+                if (message) {
+                    errorMsg = Array.isArray(message) ? message.join(', ') : message;
                 }
-            } else {
-                setError('Registration failed. Please try again.');
+            } else if (err instanceof Error) {
+                if (!err.message.includes('Request failed with status code')) {
+                    errorMsg = err.message;
+                }
             }
+
+            setError(errorMsg);
         } finally {
             setIsLoading(false);
         }
