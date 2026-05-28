@@ -246,3 +246,66 @@ export const OrderErrorSadPath: Story = {
     expect(canvas.getByText(/insufficient stock/i)).toBeInTheDocument();
   },
 };
+
+export const EmailValidationSadPath: Story = {
+  args: { ...defaultArgs, isOpen: true },
+  render: (args) => <ModalWrapper {...args} seedCart={true} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(/\[Status: Ready\]/i);
+    await userEvent.click(canvas.getByTitle('Proceed to Checkout'));
+    await canvas.findByRole('heading', { name: /checkout/i });
+
+    const submitButton = canvas.getByRole('button', { name: /place order/i });
+    await userEvent.type(canvas.getByLabelText(/full name/i), 'Jamie Rivera');
+    await userEvent.type(canvas.getByLabelText(/student id/i), '2024-0001');
+    await userEvent.type(canvas.getByLabelText(/email address/i), 'jamie@gmail.com');
+    await userEvent.type(canvas.getByLabelText(/contact number/i), '09171234567');
+    
+    await userEvent.click(submitButton);
+    await canvas.findByRole('heading', { name: /order failed/i });
+    expect(canvas.getByText(/please enter a valid @cpu.edu.ph email address/i)).toBeInTheDocument();
+  },
+};
+
+export const ContactNumberValidationSadPath: Story = {
+  args: { ...defaultArgs, isOpen: true },
+  render: (args) => <ModalWrapper {...args} seedCart={true} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(/\[Status: Ready\]/i);
+    await userEvent.click(canvas.getByTitle('Proceed to Checkout'));
+    await canvas.findByRole('heading', { name: /checkout/i });
+
+    const submitButton = canvas.getByRole('button', { name: /place order/i });
+    await userEvent.type(canvas.getByLabelText(/full name/i), 'Jamie Rivera');
+    await userEvent.type(canvas.getByLabelText(/student id/i), '2024-0001');
+    await userEvent.type(canvas.getByLabelText(/email address/i), 'jamie@cpu.edu.ph');
+    await userEvent.type(canvas.getByLabelText(/contact number/i), '123');
+    
+    await userEvent.click(submitButton);
+    await canvas.findByRole('heading', { name: /order failed/i });
+    expect(canvas.getByText(/invalid contact number/i)).toBeInTheDocument();
+  },
+};
+
+export const StudentIdValidationSadPath: Story = {
+  args: { ...defaultArgs, isOpen: true },
+  render: (args) => <ModalWrapper {...args} seedCart={true} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(/\[Status: Ready\]/i);
+    await userEvent.click(canvas.getByTitle('Proceed to Checkout'));
+    await canvas.findByRole('heading', { name: /checkout/i });
+
+    const submitButton = canvas.getByRole('button', { name: /place order/i });
+    await userEvent.type(canvas.getByLabelText(/full name/i), 'Jamie Rivera');
+    await userEvent.type(canvas.getByLabelText(/student id/i), '99-invalid');
+    await userEvent.type(canvas.getByLabelText(/email address/i), 'jamie@cpu.edu.ph');
+    await userEvent.type(canvas.getByLabelText(/contact number/i), '09171234567');
+    
+    await userEvent.click(submitButton);
+    await canvas.findByRole('heading', { name: /order failed/i });
+    expect(canvas.getByText(/invalid student ID format/i)).toBeInTheDocument();
+  },
+};

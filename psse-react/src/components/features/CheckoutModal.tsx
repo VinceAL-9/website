@@ -80,9 +80,21 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@cpu\.edu\.ph$/;
     if (!emailRegex.test(formData.customerEmail)) {
-      setErrorMessage('Please enter a valid email address');
+      setErrorMessage('Please enter a valid @cpu.edu.ph email address');
+      return false;
+    }
+
+    // Contact number validation (simple numeric check)
+    if (!/^\d{10,}$/.test(formData.contactNumber.replace(/[-\s]/g, ''))) {
+      setErrorMessage('Invalid contact number');
+      return false;
+    }
+
+    // Student ID validation (simple format check)
+    if (!/^\d{4}-\d{4}$/.test(formData.studentId)) {
+      setErrorMessage('Invalid student ID format');
       return false;
     }
 
@@ -291,10 +303,11 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
               Full Name *
             </label>
             <input
+              id="customerName"
               type="text"
               name="customerName"
               value={formData.customerName}
@@ -306,10 +319,11 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-1">
               Student ID *
             </label>
             <input
+              id="studentId"
               type="text"
               name="studentId"
               value={formData.studentId}
@@ -323,10 +337,11 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address *
             </label>
             <input
+              id="customerEmail"
               type="email"
               name="customerEmail"
               value={formData.customerEmail}
@@ -337,10 +352,11 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="contactNumber" className="block text-sm font-medium text-gray-700 mb-1">
               Contact Number *
             </label>
             <input
+              id="contactNumber"
               type="tel"
               name="contactNumber"
               value={formData.contactNumber}

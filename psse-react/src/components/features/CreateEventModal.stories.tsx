@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 import { expect, userEvent, within, waitFor } from 'storybook/test';
 import CreateEventModal from './CreateEventModal';
 import { Button } from '../common';
@@ -26,6 +27,7 @@ const ModalWrapper = (args: React.ComponentProps<typeof CreateEventModal>) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
+      <Toaster />
       <Button onClick={() => setIsOpen(true)}>Open Create Event Modal</Button>
       <CreateEventModal 
         {...args} 
@@ -144,5 +146,50 @@ export const SubmitErrorSadPath: Story = {
     expect(descriptionInput).toHaveValue('A one-day build sprint for the community.');
     expect(dateInput).toHaveValue('2024-06-01T10:30');
     expect(locationInput).toHaveValue('Main Hall');
+  },
+};
+
+export const SessionExpiredSadPath: Story = {
+  args: {
+    ...defaultArgs,
+    isOpen: true
+  },
+  render: (args) => <ModalWrapper {...args} />,
+  parameters: {
+    msw: {
+      handlers: [
+        http.post('*/admin/events', () => {
+          return new HttpResponse(JSON.stringify({ message: 'Unauthorized session.' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }),
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    
+    // Fill required baseline entries
+    await fillCreateEventForm(canvas);
+    
+    const submitButton = canvas.getByRole('button', { name: /create event/i });
+    await userEvent.click(submitButton);
+
+    await delay(3000); // Short delay to allow the request to be processed and the interceptor to trigger
+
+    // Wait for the toasts to appear in the body.
+    // The interceptor might trigger a toast first ("Unauthorized session."), 
+    // then the component triggers ours ("Session expired...").
+    await waitFor(async () => {
+      const toasts = await within(document.body).findAllByText(/session expired/i);
+      // We expect at least one, ideally the one from our component 
+      // (or both if the interceptor message is similar).
+      expect(toasts.length).toBeGreaterThan(0);
+      
+      // Specifically check for our component's toast text if they are different
+      const componentToast = toasts.find(t => t.textContent?.includes('Please log in again'));
+      expect(componentToast).toBeInTheDocument();
+    });
   },
 };

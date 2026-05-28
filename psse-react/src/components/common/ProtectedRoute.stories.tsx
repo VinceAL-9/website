@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useRef } from 'react';
 import { ProtectedRoute } from './ProtectedRoute';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, delay } from 'msw';
 
 // A mock component to show when access is granted
 const ProtectedContent = () => (
@@ -187,6 +187,20 @@ export const InsufficientRoleSadPath: Story = {
             role: 'USER', 
             isVerified: true 
           });
+        }),
+      ],
+    },
+  },
+};
+
+export const AuthProfileLoadingState: Story = {
+  args: { children: <ProtectedContent /> },
+  parameters: {
+    msw: {
+      handlers: [
+        http.get('*/auth/profile', async () => {
+          await delay('infinite'); // Hold connection open to evaluate skeleton render
+          return HttpResponse.json({});
         }),
       ],
     },

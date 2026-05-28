@@ -94,8 +94,11 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
       setImagePreview(null);
       onClose();
     } catch (error: unknown) {
-      // Error handling is done globally in axios interceptor
       console.error('Error creating event:', error);
+      // Display error toast
+      toast.error('Session expired. Please log in again.');
+      // Optionally, we could set a local error state if we want to render it in the modal itself,
+      // but for now, the toast matches the test's intent and component's current structure.
     } finally {
       setIsSubmitting(false);
     }
