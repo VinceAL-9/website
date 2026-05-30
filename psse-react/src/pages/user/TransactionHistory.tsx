@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSpinner, FaShoppingBag, FaCalendar, FaCreditCard, FaReceipt, FaUpload, FaCheckCircle, FaExternalLinkAlt, FaTimesCircle } from 'react-icons/fa';
 import { useUserAuth } from '../../context';
 import { ordersApi } from '../../services/api';
 import type { ApiOrder } from '../../types';
 import { OrderStatus } from '../../types/api.types';
+import { Filter } from '../../components/common/Filter';
 
 export const TransactionHistory = () => {
   const navigate = useNavigate();
@@ -12,6 +13,10 @@ export const TransactionHistory = () => {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
 
   // State for tracking file upload
   const [uploadingOrderId, setUploadingOrderId] = useState<string | null>(null);
@@ -24,6 +29,34 @@ export const TransactionHistory = () => {
 
   // Refs for hidden file inputs (one per order)
   const fileInputRefs = useRef<Map<string, HTMLInputElement | null>>(new Map());
+
+  // Filtered orders logic
+  const uniqueYears = useMemo(() => {
+    const years = [...new Set(orders.map((o) => new Date(o.createdAt).getFullYear()))];
+    return years.sort((a, b) => b - a); // Newest first
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const statusMatch = statusFilter === 'all' || order.status.toLowerCase() === statusFilter;
+      const yearMatch = yearFilter === 'all' || new Date(order.createdAt).getFullYear().toString() === yearFilter;
+      return statusMatch && yearMatch;
+    });
+  }, [orders, statusFilter, yearFilter]);
+
+  const statusOptions = [
+    { label: 'All Statuses', value: 'all' },
+    { label: 'Pending', value: 'pending' },
+    { label: 'Paid', value: 'paid' },
+    { label: 'Ready for Pickup', value: 'ready_pickup' },
+    { label: 'Completed', value: 'completed' },
+    { label: 'Cancelled', value: 'cancelled' },
+  ];
+
+  const yearOptions = [
+    { label: 'All Years', value: 'all' },
+    ...uniqueYears.map((year) => ({ label: year.toString(), value: year.toString() })),
+  ];
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -159,15 +192,35 @@ export const TransactionHistory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <FaShoppingBag className="text-psse-primary" />
-            Transaction History
-          </h1>
-          <p className="mt-2 text-gray-600">View all your merchandise orders and transaction details</p>
+        <div className="sticky top-0 bg-gray-50 z-10 py-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <FaShoppingBag className="text-psse-primary" />
+                Transaction History
+              </h1>
+              <p className="mt-2 text-gray-600">View all your merchandise orders and transaction details</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Filter
+                label="Status"
+                options={statusOptions}
+                selected={statusFilter}
+                onFilterChange={setStatusFilter}
+                className="w-36"
+              />
+              <Filter
+                label="Year"
+                options={yearOptions}
+                selected={yearFilter}
+                onFilterChange={setYearFilter}
+                className="w-36"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Error State */}
@@ -207,9 +260,9 @@ export const TransactionHistory = () => {
         )}
 
         {/* Orders List */}
-        {orders.length > 0 && (
+        {filteredOrders.length > 0 && (
           <div className="space-y-6">
-            {orders.map((order) => (
+            {filteredOrders.map((order) => (
               <div key={order.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 {/* Hidden file input for this order */}
                 <input
@@ -410,4 +463,3 @@ export const TransactionHistory = () => {
     </div>
   );
 };
-
