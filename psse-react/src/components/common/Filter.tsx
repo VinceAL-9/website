@@ -42,7 +42,7 @@ export const Filter = ({ options, selected, onFilterChange, label, className = '
         className="w-full flex items-center justify-between px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-psse-accent"
       >
         <span className="truncate mr-2">{selectedOption ? selectedOption.label : 'Select...'}</span>
-        <FaChevronDown className={`flex-shrink-0 h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <FaChevronDown className={`shrink-0 h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
