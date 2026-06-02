@@ -121,7 +121,7 @@ export const Merchandise = () => {
       )}
 
       {/* Header Section */}
-      <section className="py-16 px-4 bg-linear-to-b from-gray-100 to-white">
+      <section className="sticky top-16 z-40 py-16 px-4 bg-linear-to-b from-gray-100 to-white">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-psse-accent mb-4">
             PSSE Official Merchandise
