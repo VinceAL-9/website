@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo, type FormEvent, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useRef, type FormEvent, type ReactNode } from 'react';
 import { FaPlus, FaSpinner } from 'react-icons/fa';
 import { Button, Filter } from '../../../components/common';
 import { eventsApi } from '../../../services/api';
@@ -6,6 +6,7 @@ import type { ApiEvent } from '../../../types';
 import { useEvents, initialEventForm, type EventFormData } from './useEvents';
 import { EventTable } from './EventTable';
 import { EventModal } from './EventModal';
+import { useScrollPagination } from '../../../hooks/useScrollPagination';
 
 interface EventsContextType {
     events: ApiEvent[];
@@ -28,7 +29,9 @@ interface EventsContextType {
     setEventYearFilter: React.Dispatch<React.SetStateAction<string>>;
     eventStatusFilter: string;
     setEventStatusFilter: React.Dispatch<React.SetStateAction<string>>;
-    filteredEvents: ApiEvent[];
+    displayedEvents: ApiEvent[];
+    hasMore: boolean;
+    loadMore: () => void;
     eventYearOptions: { label: string; value: string; }[];
     eventStatusOptions: { label: string; value: string; }[];
     openEditEventModal: (event: ApiEvent) => void;
@@ -59,12 +62,37 @@ export const EventsHeader = () => {
 export const EventsContent = () => {
     const context = useContext(EventsContext);
     if (!context) return null;
-    const { loading, error, loadEvents, filteredEvents, openEditEventModal, handleDeleteEvent, formatDate, showEventModal, closeEventModal, handleEventSubmit, eventForm, setEventForm, editingEvent, eventSubmitting, selectedImageFile, setSelectedImageFile, imagePreview, setImagePreview } = context;
+    const { loading, error, loadEvents, displayedEvents, openEditEventModal, handleDeleteEvent, formatDate, showEventModal, closeEventModal, handleEventSubmit, eventForm, setEventForm, editingEvent, eventSubmitting, selectedImageFile, setSelectedImageFile, imagePreview, setImagePreview, hasMore, loadMore } = context;
+
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const container = containerRef.current;
+            if (!container) return;
+            
+            const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+            
+            if (isAtBottom && hasMore) {
+                loadMore();
+            }
+        };
+        const container = containerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+        }
+        return () => {
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [hasMore, loadMore]);
+
     if (loading) return <div className="flex items-center justify-center py-12"><FaSpinner className="animate-spin text-3xl text-psse-accent" /></div>;
     if (error) return <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">{error}<button onClick={loadEvents} className="ml-2 underline">Retry</button></div>;
     return (
-        <div className="p-6 bg-white rounded-xl shadow-sm overflow-hidden">
-            <EventTable events={filteredEvents} onEdit={openEditEventModal} onDelete={handleDeleteEvent} formatDate={formatDate} />
+        <div ref={containerRef} className="p-6 bg-white rounded-xl shadow-sm overflow-y-auto max-h-[80vh]">
+            <EventTable events={displayedEvents} onEdit={openEditEventModal} onDelete={handleDeleteEvent} formatDate={formatDate} />
             <EventModal
                 isOpen={showEventModal}
                 onClose={closeEventModal}
@@ -78,9 +106,11 @@ export const EventsContent = () => {
                 imagePreview={imagePreview}
                 setImagePreview={setImagePreview}
             />
+            {hasMore && <div className="py-4 text-center text-gray-500">Loading more...</div>}
         </div>
     );
 };
+
 
 export const EventsProvider = ({ children }: { children: ReactNode }) => {
   const { events, loading, error, loadEvents } = useEvents();
@@ -104,6 +134,12 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
     }
     return filtered;
   }, [events, eventYearFilter, eventStatusFilter]);
+
+  const { displayedItems: displayedEvents, hasMore, loadMore, reset: resetPagination } = useScrollPagination(filteredEvents);
+
+  useEffect(() => {
+    resetPagination();
+  }, [filteredEvents, resetPagination]);
 
   const eventYearOptions = useMemo(() => {
     const years = Array.from(new Set(events.map(e => new Date(e.date).getFullYear().toString()))).sort((a, b) => Number(b) - Number(a));
@@ -184,7 +220,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   return (
-    <EventsContext.Provider value={{ events, loading, error, loadEvents, showEventModal, setShowEventModal, editingEvent, setEditingEvent, eventForm, setEventForm, eventSubmitting, setEventSubmitting, selectedImageFile, setSelectedImageFile, imagePreview, setImagePreview, eventYearFilter, setEventYearFilter, eventStatusFilter, setEventStatusFilter, filteredEvents, eventYearOptions, eventStatusOptions, openEditEventModal, handleDeleteEvent, formatDate, closeEventModal, handleEventSubmit }}>
+    <EventsContext.Provider value={{ events, loading, error, loadEvents, showEventModal, setShowEventModal, editingEvent, setEditingEvent, eventForm, setEventForm, eventSubmitting, setEventSubmitting, selectedImageFile, setSelectedImageFile, imagePreview, setImagePreview, eventYearFilter, setEventYearFilter, eventStatusFilter, setEventStatusFilter, displayedEvents, hasMore, loadMore, eventYearOptions, eventStatusOptions, openEditEventModal, handleDeleteEvent, formatDate, closeEventModal, handleEventSubmit }}>
         {children}
     </EventsContext.Provider>
   );

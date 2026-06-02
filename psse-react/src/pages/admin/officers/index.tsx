@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useMemo, type FormEvent, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useRef, type FormEvent, type ReactNode } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSpinner, FaUsers } from 'react-icons/fa';
 import { Button, Filter, Modal } from '../../../components/common';
 import { officersApi } from '../../../services/api';
 import type { ApiOfficer } from '../../../types/api.types';
 import { useOfficers, initialOfficerForm, type OfficerFormData } from './useOfficers';
+import { useScrollPagination } from '../../../hooks/useScrollPagination';
 
 const OFFICER_CATEGORY_OPTIONS = [
   { value: 'EXEC', label: 'Executive Board' },
@@ -31,7 +32,9 @@ interface OfficersContextType {
     openEditOfficerModal: (officer: ApiOfficer) => void;
     handleDeleteOfficer: (officer: ApiOfficer) => Promise<void>;
     openAddOfficerModal: () => void;
-    filteredOfficers: ApiOfficer[];
+    displayedOfficers: ApiOfficer[];
+    hasMore: boolean;
+    loadMore: () => void;
     officerCategoryFilter: string;
     setOfficerCategoryFilter: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -56,13 +59,37 @@ export const OfficersHeader = () => {
 export const OfficersContent = () => {
   const context = useContext(OfficersContext);
   if (!context) return null;
-  const { filteredOfficers, loading, error, loadOfficers, showOfficerModal, closeOfficerModal, handleOfficerSubmit, officerForm, setOfficerForm, editingOfficer, officerSubmitting, setSelectedOfficerPhotoFile, officerPhotoPreview, setOfficerPhotoPreview, openEditOfficerModal, handleDeleteOfficer } = context;
+  const { displayedOfficers, loading, error, loadOfficers, showOfficerModal, closeOfficerModal, handleOfficerSubmit, officerForm, setOfficerForm, editingOfficer, officerSubmitting, setSelectedOfficerPhotoFile, officerPhotoPreview, setOfficerPhotoPreview, openEditOfficerModal, handleDeleteOfficer, hasMore, loadMore } = context;
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+        const container = containerRef.current;
+        if (!container) return;
+        
+        const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+        
+        if (isAtBottom && hasMore) {
+            loadMore();
+        }
+    };
+    const container = containerRef.current;
+    if (container) {
+        container.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+        if (container) {
+            container.removeEventListener('scroll', handleScroll);
+        }
+    };
+  }, [hasMore, loadMore]);
 
   if (loading) return <div className="flex items-center justify-center py-12"><FaSpinner className="animate-spin text-3xl text-psse-accent" /></div>;
   if (error) return <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">{error}<button onClick={loadOfficers} className="ml-2 underline">Retry</button></div>;
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-sm overflow-hidden">
+    <div ref={containerRef} className="p-6 bg-white rounded-xl shadow-sm overflow-y-auto max-h-[80vh]">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -75,10 +102,10 @@ export const OfficersContent = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredOfficers.length === 0 ? (
+            {displayedOfficers.length === 0 ? (
               <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No officers found.</td></tr>
             ) : (
-              filteredOfficers.map((officer: ApiOfficer) => (
+              displayedOfficers.map((officer: ApiOfficer) => (
                 <tr key={officer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">{officer.photoUrl ? <img src={officer.photoUrl} alt={officer.name} className="w-12 h-12 rounded-full object-cover" /> : <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center"><FaUsers className="text-gray-400" /></div>}</td>
                   <td className="px-6 py-4 font-medium text-gray-900">{officer.name}</td>
@@ -94,6 +121,7 @@ export const OfficersContent = () => {
             )}
           </tbody>
         </table>
+        {hasMore && <div className="py-4 text-center text-gray-500">Loading more...</div>}
         <Modal isOpen={showOfficerModal} onClose={closeOfficerModal} title={editingOfficer ? 'Edit Officer' : 'Add New Officer'} size="lg">
             <form onSubmit={handleOfficerSubmit} className="space-y-4">
             <div><label htmlFor="officer-name" className="block text-sm font-medium text-gray-700 mb-1">Name *</label><input id="officer-name" name="name" type="text" required value={officerForm.name} onChange={(e) => setOfficerForm((p: OfficerFormData) => ({...p, name: e.target.value}))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent" placeholder="Officer name" /></div>
@@ -113,6 +141,7 @@ export const OfficersContent = () => {
   );
 };
 
+
 export const OfficersProvider = ({ children }: { children: ReactNode }) => {
   const { officers, loading, error, loadOfficers } = useOfficers();
   const [showOfficerModal, setShowOfficerModal] = useState(false);
@@ -127,6 +156,12 @@ export const OfficersProvider = ({ children }: { children: ReactNode }) => {
     if (officerCategoryFilter === 'all') return officers;
     return officers.filter((officer) => officer.category === officerCategoryFilter);
   }, [officers, officerCategoryFilter]);
+
+  const { displayedItems: displayedOfficers, hasMore, loadMore, reset: resetPagination } = useScrollPagination(filteredOfficers);
+
+  useEffect(() => {
+    resetPagination();
+  }, [filteredOfficers, resetPagination]);
 
   const openAddOfficerModal = () => {
     setEditingOfficer(null);
@@ -191,7 +226,7 @@ export const OfficersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <OfficersContext.Provider value={{ officers, loading, error, loadOfficers, showOfficerModal, closeOfficerModal, handleOfficerSubmit, officerForm, setOfficerForm, editingOfficer, officerSubmitting, setSelectedOfficerPhotoFile, officerPhotoPreview, setOfficerPhotoPreview, openEditOfficerModal, handleDeleteOfficer, openAddOfficerModal, filteredOfficers, officerCategoryFilter, setOfficerCategoryFilter }}>
+    <OfficersContext.Provider value={{ officers, loading, error, loadOfficers, showOfficerModal, closeOfficerModal, handleOfficerSubmit, officerForm, setOfficerForm, editingOfficer, officerSubmitting, setSelectedOfficerPhotoFile, officerPhotoPreview, setOfficerPhotoPreview, openEditOfficerModal, handleDeleteOfficer, openAddOfficerModal, displayedOfficers, hasMore, loadMore, officerCategoryFilter, setOfficerCategoryFilter }}>
       {children}
     </OfficersContext.Provider>
   );

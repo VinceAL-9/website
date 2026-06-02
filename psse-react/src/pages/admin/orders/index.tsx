@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { FaSpinner, FaExternalLinkAlt, FaExclamationCircle, FaImage } from 'react-icons/fa';
 import { Filter } from '../../../components/common';
 import { useOrders } from './useOrders';
 import { OrderStatus, type ApiOrder } from '../../../types/api.types';
+import { useScrollPagination } from '../../../hooks/useScrollPagination';
 
 const ORDER_STATUS_OPTIONS = [
   { value: OrderStatus.PENDING, label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
@@ -23,7 +24,9 @@ interface OrdersContextType {
     setOrderStatusFilter: React.Dispatch<React.SetStateAction<string>>;
     orderDateFilter: string;
     setOrderDateFilter: React.Dispatch<React.SetStateAction<string>>;
-    filteredOrders: ApiOrder[];
+    displayedOrders: ApiOrder[];
+    hasMore: boolean;
+    loadMore: () => void;
     orderDateOptions: { label: string; value: string; }[];
     formatDate: (dateString: string) => string;
     formatCurrency: (amount: number | string) => string;
@@ -50,13 +53,37 @@ export const OrdersHeader = () => {
 export const OrdersContent = () => {
     const context = useContext(OrdersContext);
     if (!context) return null;
-    const { filteredOrders, loading, error, loadOrders, updatingOrderId, updateOrderStatus, formatDate, formatCurrency } = context;
+    const { displayedOrders, loading, error, loadOrders, updatingOrderId, updateOrderStatus, formatDate, formatCurrency, hasMore, loadMore } = context;
+
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const container = containerRef.current;
+            if (!container) return;
+            
+            const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+            
+            if (isAtBottom && hasMore) {
+                loadMore();
+            }
+        };
+        const container = containerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+        }
+        return () => {
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [hasMore, loadMore]);
 
     if (loading) return <div className="flex items-center justify-center py-12"><FaSpinner className="animate-spin text-3xl text-psse-accent" /></div>;
     if (error) return <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">{error}<button onClick={loadOrders} className="ml-2 underline">Retry</button></div>;
 
     return (
-        <div className="p-6 space-y-6 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div ref={containerRef} className="p-6 space-y-6 bg-white rounded-xl shadow-sm overflow-y-auto max-h-[80vh]">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -70,10 +97,10 @@ export const OrdersContent = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredOrders.length === 0 ? (
+            {displayedOrders.length === 0 ? (
               <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">No orders found.</td></tr>
             ) : (
-              filteredOrders.map((order) => {
+              displayedOrders.map((order) => {
                 const needsReview = order.status === OrderStatus.PAID && order.paymentProofUrl;
                 return (
                   <tr key={order.id} className={`hover:bg-gray-50 ${needsReview ? 'bg-amber-50 border-l-4 border-l-amber-500' : ''}`}>
@@ -116,9 +143,11 @@ export const OrdersContent = () => {
             )}
           </tbody>
         </table>
+        {hasMore && <div className="py-4 text-center text-gray-500">Loading more...</div>}
       </div>
     );
 };
+
 
 export const OrdersProvider = ({ children }: { children: ReactNode }) => {
   const { orders, loading, error, loadOrders, updateOrderStatus, updatingOrderId } = useOrders();
@@ -131,6 +160,12 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
     if (orderDateFilter !== 'all') filtered = filtered.filter((o) => new Date(o.createdAt).toLocaleDateString('en-CA') === orderDateFilter);
     return filtered;
   }, [orders, orderStatusFilter, orderDateFilter]);
+
+  const { displayedItems: displayedOrders, hasMore, loadMore, reset: resetPagination } = useScrollPagination(filteredOrders);
+
+  useEffect(() => {
+    resetPagination();
+  }, [filteredOrders, resetPagination]);
 
   const orderDateOptions = useMemo(() => {
     const dateMap = new Map<string, string>();
@@ -147,7 +182,7 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
   const formatCurrency = (amount: number | string) => `₱${(typeof amount === 'string' ? parseFloat(amount) : amount).toFixed(2)}`;
 
   return (
-    <OrdersContext.Provider value={{ orders, loading, error, loadOrders, updateOrderStatus, updatingOrderId, orderStatusFilter, setOrderStatusFilter, orderDateFilter, setOrderDateFilter, filteredOrders, orderDateOptions, formatDate, formatCurrency }}>
+    <OrdersContext.Provider value={{ orders, loading, error, loadOrders, updateOrderStatus, updatingOrderId, orderStatusFilter, setOrderStatusFilter, orderDateFilter, setOrderDateFilter, displayedOrders, hasMore, loadMore, orderDateOptions, formatDate, formatCurrency }}>
       {children}
     </OrdersContext.Provider>
   );
