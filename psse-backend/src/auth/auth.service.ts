@@ -196,6 +196,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         studentId: true,
         createdAt: true,

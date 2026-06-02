@@ -135,6 +135,7 @@ describe('AuthController (Integration)', () => {
         .expect(200);
 
       expect(response.body.email).toBe('integration@cpu.edu.ph');
+      expect(response.body.name).toBe('Integration Test User');
       expect(response.body.role).toBe('MEMBER');
     });
 

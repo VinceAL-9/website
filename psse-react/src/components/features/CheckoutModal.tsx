@@ -93,7 +93,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     }
 
     // Student ID validation (simple format check)
-    if (!/^\d{4}-\d{4}$/.test(formData.studentId)) {
+    if (!/^\d{2}-\d{4}-\d{2}$/.test(formData.studentId)) {
       setErrorMessage('Invalid student ID format');
       return false;
     }
@@ -312,9 +312,8 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
               name="customerName"
               value={formData.customerName}
               onChange={handleFormChange}
-              readOnly={!!user}
               autoFocus
-              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
               required
             />
           </div>
@@ -328,8 +327,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
               name="studentId"
               value={formData.studentId}
               onChange={handleFormChange}
-              readOnly={!!user}
-              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
               required
             />
           </div>
@@ -346,8 +344,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
               name="customerEmail"
               value={formData.customerEmail}
               onChange={handleFormChange}
-              readOnly={!!user}
-              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-psse-accent focus:border-transparent"
               required
             />
           </div>

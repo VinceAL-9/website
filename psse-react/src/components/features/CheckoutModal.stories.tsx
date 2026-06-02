@@ -192,7 +192,7 @@ export const AuthenticatedUserHappyPath: Story = {
             id: '1', 
             name: 'Jane Doe', 
             email: 'jane@cpu.edu.ph', 
-            studentId: '2020-0001',
+            studentId: '20-0001-01',
             role: 'MEMBER', 
             isVerified: true 
           });
@@ -258,7 +258,7 @@ export const EmailValidationSadPath: Story = {
 
     const submitButton = canvas.getByRole('button', { name: /place order/i });
     await userEvent.type(canvas.getByLabelText(/full name/i), 'Jamie Rivera');
-    await userEvent.type(canvas.getByLabelText(/student id/i), '2024-0001');
+    await userEvent.type(canvas.getByLabelText(/student id/i), '24-0001-01');
     await userEvent.type(canvas.getByLabelText(/email address/i), 'jamie@gmail.com');
     await userEvent.type(canvas.getByLabelText(/contact number/i), '09171234567');
     
@@ -279,7 +279,7 @@ export const ContactNumberValidationSadPath: Story = {
 
     const submitButton = canvas.getByRole('button', { name: /place order/i });
     await userEvent.type(canvas.getByLabelText(/full name/i), 'Jamie Rivera');
-    await userEvent.type(canvas.getByLabelText(/student id/i), '2024-0001');
+    await userEvent.type(canvas.getByLabelText(/student id/i), '24-0001-01');
     await userEvent.type(canvas.getByLabelText(/email address/i), 'jamie@cpu.edu.ph');
     await userEvent.type(canvas.getByLabelText(/contact number/i), '123');
     

@@ -61,15 +61,15 @@ export const Navbar = () => {
             {/* User Info & Logout */}
             {isAuthenticated && (
               <div className="flex items-center gap-2 ml-4 pl-4 border-l border-psse-light/30">
-                <div className="flex items-center gap-2 text-gray-300">
-                  <FaUser className="w-4 h-4" />
-                  <span className="text-sm">{user?.name || 'Member'}</span>
+                <div className="flex items-center gap-2 text-gray-300 min-w-0">
+                  <FaUser className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm truncate max-w-[150px]">{user?.name}</span>
                 </div>
                 <Link
                   to="/user/transactions"
                   className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-psse-accent/20 hover:text-psse-accent transition-all duration-200"
                 >
-                  <FaShoppingBag className="w-4 h-4" />
+                  <FaShoppingBag className="w-4 h-4 flex-shrink-0" />
                   <span>My Orders</span>
                 </Link>
                 <button
@@ -77,7 +77,7 @@ export const Navbar = () => {
                   className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200"
                   aria-label="Logout"
                 >
-                  <FaSignOutAlt className="w-4 h-4" />
+                  <FaSignOutAlt className="w-4 h-4 flex-shrink-0" />
                   <span>Logout</span>
                 </button>
               </div>
@@ -118,9 +118,9 @@ export const Navbar = () => {
             {/* Mobile User Info & Logout */}
             {isAuthenticated && (
               <div className="pt-3 mt-3 border-t border-psse-light/30">
-                <div className="flex items-center gap-2 px-4 py-2 text-gray-300">
-                  <FaUser className="w-4 h-4" />
-                  <span className="text-sm">{user?.name || 'Member'}</span>
+                <div className="flex items-center gap-2 px-4 py-2 text-gray-300 min-w-0">
+                  <FaUser className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm truncate">{user?.name}</span>
                 </div>
                 <Link
                   to="/user/transactions"
