@@ -1,61 +1,26 @@
-# PSSE Backend API
+# PSSE Backend
 
-This directory contains the backend for the Philippine Society of Software Engineers (PSSE) website. It is a RESTful API built with NestJS, providing data services and business logic for the frontend application.
+## Overview
+This is the NestJS backend application for the PSSE organization website. It uses PostgreSQL managed by Prisma ORM and interacts with Cloudinary for image storage and Nodemailer for emails.
 
-## Project Overview
+## Development Setup
+- **Scripts:**
+    - `npm run start:dev`: Start development server with hot-reload.
+    - `npm run test`: Run all tests (Unit & Integration).
+    - `npm run test:unit`: Run only unit tests.
+    - `npm run test:integration`: Run only integration tests.
+    - `npm run prisma:migrate:dev`: Run database migrations.
+    - `npm run prisma:studio`: Open Prisma Studio to inspect the database.
 
-- **Framework:** NestJS 11
-- **Database:** PostgreSQL (designed for Neon.tech)
-- **ORM:** Prisma
-- **Authentication:** Passport.js with JWT (Access and Refresh tokens)
-- **API Documentation:** Swagger / OpenAPI
-- **Media Storage:** Cloudinary
-- **Email Service:** Nodemailer (configured for Resend)
+## Architecture & Conventions
+- **Framework:** NestJS (Modules, Controllers, Services).
+- **ORM:** Prisma.
+- **Database:** PostgreSQL.
+- **Validation:** `class-validator` for DTOs.
+- **Testing:** Jest.
+    - Unit tests: Located in `tests/unit`.
+    - Integration tests: Located in `tests/integration`.
+- **Styling/Formatting:** Prettier and ESLint are enforced. Run `npm run lint` and `npm run format`.
 
-## Directory Structure
-
-- `src/`: Main source code directory.
-  - `auth/`: Authentication logic, JWT strategies, and guards.
-  - `events/`: Event management module.
-  - `officers/`: Officer management module.
-  - `products/`: Merchandise and product catalog module.
-  - `orders/`: Order processing and management.
-  - `prisma/`: Prisma service integration for dependency injection.
-  - `mail/`: Email sending service and templates.
-  - `cloudinary/`: Image upload service.
-- `prisma/`: Database schema definitions (`schema.prisma`) and migrations.
-  - `schema.prisma`: The single source of truth for the database schema.
-  - `migrations/`: Auto-generated SQL migrations.
-- `tests/`: Test suites configuration and implementation.
-
-## Setup and Environment
-
-1.  **Dependencies:** Run `npm install` to install all required packages.
-2.  **Environment Variables:** Copy `.env.example` to `.env` and fill in the required values. Key variables include:
-    - `DATABASE_URL` / `DIRECT_URL`: PostgreSQL connection strings.
-    - `JWT_SECRET` / `JWT_REFRESH_SECRET`: Secrets for signing tokens.
-    - `CLOUDINARY_*`: Cloudinary API credentials for image uploads.
-    - `MAIL_*`: SMTP configuration for sending emails.
-
-## Common Commands
-
-- **Start Development Server:** `npm run start:dev` (Runs on `http://localhost:3000` by default).
-- **Build for Production:** `npm run build`
-- **Lint Code:** `npm run lint`
-- **Format Code:** `npm run format` (Uses Prettier).
-- **Run Unit Tests:** `npm run test:unit`
-- **Run Integration Tests:** `npm run test:integration`
-
-### Prisma Commands
-
-- **Generate Prisma Client:** `npm run prisma:generate`
-- **Create a Migration:** `npm run prisma:migrate:dev`
-- **Push Schema:** `npm run prisma:push`
-- **Open Prisma Studio:** `npm run prisma:studio`
-
-## Development Conventions
-
-- **Validation:** Use `class-validator` and `class-transformer` decorators on DTOs. The application uses a global `ValidationPipe` to enforce these rules automatically.
-- **Documentation:** Use `@nestjs/swagger` decorators on controllers and DTOs to keep the OpenAPI documentation up-to-date. The Swagger UI is available at `/api` when the server is running.
-- **Security:** Endpoints requiring authentication should be protected with the `@UseGuards(JwtAuthGuard)` decorator. Role-based access control can be implemented using custom roles guards.
-- **Error Handling:** Avoid returning raw errors. Use standard NestJS `HttpException` classes (e.g., `NotFoundException`, `BadRequestException`).
+## Database
+The schema is defined in `prisma/schema.prisma`. All changes to the database structure should be made there and applied via `npm run prisma:migrate:dev`.

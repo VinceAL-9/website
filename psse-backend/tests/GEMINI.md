@@ -1,30 +1,18 @@
-# PSSE Backend Testing
+# PSSE Backend Tests
 
-This directory contains the testing suite for the PSSE backend.
+## Overview
+This directory contains the testing suite for the `psse-backend` application. It follows a structure separating unit tests from integration tests and provides shared helpers and mocks.
 
-## Testing Architecture
+## Structure
+- `unit/`: Contains Jest unit tests for services.
+- `integration/`: Contains Jest integration tests for controllers, including setup and database cleanup.
+- `mocks/`: Reusable mocks (e.g., Cloudinary, Mail).
+- `helpers/`: Shared testing utilities (`auth-helper`, `db-cleaner`, `test-app`).
 
-The project uses [Jest](https://jestjs.io/) for both unit and integration testing.
-
-- `unit/`: Contains isolated tests for individual services.
-- `integration/`: Contains tests that interact with the database and other services (e.g., mail, Cloudinary).
-
-## Configuration
-
-- `jest.config.ts`: Defines two separate test projects: `unit` and `integration`.
-- `integration/setup.ts`: Global setup for integration tests, including loading `.env.test` and initializing database cleanup.
+## Testing Conventions
+- **Framework:** Jest.
+- **Configuration:** `jest.config.ts` in this directory handles the test environment configuration and defines separate projects for unit and integration tests.
+- **Integration Tests:** Use `tests/integration/setup.ts` for global setup. Database state is managed using `tests/integration/helpers/db-cleaner.ts`.
 
 ## Running Tests
-
-From the `psse-backend` root directory:
-
-- **Run all tests:** `npm run test`
-- **Run Integration tests:** `npm run test:integration`
-- **Run Unit tests:** `npm run test:unit`
-
-## Adding Tests
-
-1.  **Unit Tests:** Place in `tests/unit/` using the `.spec.ts` suffix.
-2.  **Integration Tests:** Place in `tests/integration/` using the `.test.ts` suffix. 
-    - Ensure you utilize `tests/integration/helpers/` for database and app setup to ensure tests are isolated and idempotent.
-    - If your test requires a specific database state, use the helpers to seed or clear the database before/after tests.
+Refer to the `psse-backend` root `GEMINI.md` for test runner commands (`npm run test:unit`, `npm run test:integration`).
